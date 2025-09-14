@@ -1,0 +1,79 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f4f4f9;
+  color: #222;
+}
+header {
+  background: #1e3a8a;
+  color: white;
+  padding: 1rem;
+}
+header h1 {
+  margin: 0;
+}
+.controls {
+  margin-top: .5rem;
+}
+main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+section {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,.1);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: .5rem;
+}
+table th, table td {
+  border: 1px solid #ddd;
+  padding: .5rem;
+  text-align: center;
+}
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: .4rem .8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover {
+  background: #1e40af;
+}
+.warning {
+  color: red;
+  font-weight: bold;
+}
+.timetable {
+  grid-column: span 2;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border: 1px solid #ddd;
+}
+.grid div {
+  border: 1px solid #ddd;
+  padding: 5px;
+  min-height: 40px;
+  font-size: 0.8rem;
+}
+.grid .header {
+  background: #e5e7eb;
+  font-weight: bold;
+}
+.grid .slot {
+  background: #f9fafb;
+}
+.grid .occupied {
+  background: #93c5fd;
+}
