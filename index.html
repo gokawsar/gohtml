@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Routine Visualizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        
+        .search-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input, select, button {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        input {
+            flex: 1;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .results-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .course-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .course-header {
+            background: #ecf0f1;
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .course-title {
+            font-weight: bold;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+        
+        .course-info {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .sections-container {
+            display: none;
+            padding: 0;
+        }
+        
+        .section-item {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-info {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .section-time {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .section-days {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .section-teacher {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .section-action {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-add {
+            background: #27ae60;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        
+        .btn-add:hover {
+            background: #219653;
+        }
+        
+        .btn-remove {
+            background: #e74c3c;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+        
+        .schedule-section {
+            margin-top: 30px;
+        }
+        
+        .schedule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .credit-info {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .schedule-table th {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .schedule-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #eee;
+            height: 80px;
+            vertical-align: top;
+        }
+        
+        .time-cell {
+            background: #f8f9fa;
+            font-weight: bold;
+            width: 120px;
+        }
+        
+        .course-slot {
+            background: #d6eaf8;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .no-courses {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+            
+            .schedule-table {
+                font-size: 14px;
+            }
+            
+            .course-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .section-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .section-action {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Class Routine Visualizer</h1>
+            <p class="description">View and plan your class schedule with no time conflicts</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search for courses by code, name, teacher, or section...">
+                    <button id="searchBtn">Search</button>
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="dayFilter">Filter by Day:</label>
+                        <select id="dayFilter">
+                            <option value="">All Days</option>
+                            <option value="Sat">Saturday</option>
+                            <option value="Sun">Sunday</option>
+                            <option value="Mon">Monday</option>
+                            <option value="Tue">Tuesday</option>
+                            <option value="Wed">Wednesday</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="timeFilter">Filter by Time:</label>
+                        <select id="timeFilter">
+                            <option value="">All Times</option>
+                            <option value="08:30:AM">08:30 AM</option>
+                            <option value="10:00:AM">10:00 AM</option>
+                            <option value="11:30:AM">11:30 AM</option>
+                            <option value="01:30:PM">01:30 PM</option>
+                            <option value="03:00:PM">03:00 PM</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="typeFilter">Filter by Type:</label>
+                        <select id="typeFilter">
+                            <option value="">All Types</option>
+                            <option value="Theory">Theory</option>
+                            <option value="Lab">Lab</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="results-section" id="resultsContainer">
+                <!-- Course results will be displayed here -->
+                <div class="no-courses">Use the search bar to find courses</div>
+            </div>
+            
+            <div class="schedule-section">
+                <div class="schedule-header">
+                    <h2>My Weekly Schedule</h2>
+                    <div class="credit-info">Total Credits: <span id="totalCredits">0</span> / 19</div>
+                </div>
+                
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Saturday</th>
+                            <th>Sunday</th>
+                            <th>Monday</th>
+                            <th>Tuesday</th>
+                            <th>Wednesday</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleBody">
+                        <!-- Schedule will be generated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Class Routine Visualizer - Plan your semester with no time conflicts</p>
+        </footer>
+    </div>
+
+    <script>
+        // Sample data - In a real application, this would come from an Excel file
+        const classData = [
+            {
+                formalCode: "CSE 211-CSE(181)",
+                title: "Computer Architecture",
+                sectionName: "241_D1",
+                day1: "Sun",
+                day2: "Tue",
+                time1: "08:30:AM - 10:00:AM",
+                time2: "11:30:AM - 01:00:PM",
+                teacher1: "kabir.cse",
+                teacher2: "kabir.cse",
+                credits: 3.0,
+                type: "Theory"
+            },
+            {
+                formalCode: "CSE 211-CSE(181)",
+                title: "Computer Architecture",
+                sectionName: "241_D2",
+                day1: "Sun",
+                day2: "Tue",
+                time1: "01:30:PM - 03:00:PM",
+                time2: "11:30:AM - 01:00:PM",
+                teacher1: "MAHBUBUR.CSE",
+                teacher2: "MAHBUBUR.CSE",
+                credits: 3.0,
+                type: "Theory"
+            },
+            {
+                formalCode: "CSE 303",
+                title: "Microprocessors, Microcontrollers and Embedded Systems",
+                sectionName: "232_D1",
+                day1: "Sun",
+                day2: "Tue",
+                time1: "10:00:AM - 11:30:AM",
+                time2: "03:00:PM - 04:30:PM",
+                teacher1: "jarin.cse",
+                teacher2: "jarin.cse",
+                credits: 3.0,
+                type: "Theory"
+            },
+            {
+                formalCode: "CSE 304",
+                title: "Microprocessors, Microcontrollers and Embedded Systems Lab",
+                sectionName: "232_D1",
+                day1: "Wed",
+                day2: "",
+                time1: "11:30:AM - 01:30:PM",
+                time2: "-",
+                teacher1: "jarin.cse",
+                teacher2: "",
+                credits: 1.0,
+                type: "Lab"
+            },
+            {
+                formalCode: "CSE 305",
+                title: "Information System Design",
+                sectionName: "231_D1",
+                day1: "Sun",
+                day2: "Tue",
+                time1: "11:30:AM - 01:00:PM",
+                time2: "03:00:PM - 04:30:PM",
+                teacher1: "FATEMA.CSE",
+                teacher2: "FATEMA.CSE",
+                credits: 3.0,
+                type: "Theory"
+            }
+        ];
+
+        // Global variables
+        let selectedCourses = [];
+        let filteredCourses = [];
+        const timeSlots = [
+            "08:30:AM - 10:00:AM",
+            "10:00:AM - 11:30:AM",
+            "11:30:AM - 01:00:PM",
+            "01:30:PM - 03:00:PM",
+            "03:00:PM - 04:30:PM"
+        ];
+        const days = ["Sat", "Sun", "Mon", "Tue", "Wed"];
+
+        // DOM elements
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const dayFilter = document.getElementById('dayFilter');
+        const timeFilter = document.getElementById('timeFilter');
+        const typeFilter = document.getElementById('typeFilter');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const scheduleBody = document.getElementById('scheduleBody');
+        const totalCreditsEl = document.getElementById('totalCredits');
+
+        // Initialize the application
+        function init() {
+            // Generate initial schedule
+            generateSchedule();
+            
+            // Set up event listeners
+            searchBtn.addEventListener('click', handleSearch);
+            searchInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    handleSearch();
+                }
+            });
+            
+            dayFilter.addEventListener('change', handleSearch);
+            timeFilter.addEventListener('change', handleSearch);
+            typeFilter.addEventListener('change', handleSearch);
+        }
+
+        // Handle search functionality
+        function handleSearch() {
+            const searchText = searchInput.value.toLowerCase();
+            const dayValue = dayFilter.value;
+            const timeValue = timeFilter.value;
+            const typeValue = typeFilter.value;
+            
+            filteredCourses = classData.filter(course => {
+                // Text search
+                const matchesText = searchText === '' || 
+                    course.formalCode.toLowerCase().includes(searchText) ||
+                    course.title.toLowerCase().includes(searchText) ||
+                    course.sectionName.toLowerCase().includes(searchText) ||
+                    course.teacher1.toLowerCase().includes(searchText) ||
+                    course.teacher2.toLowerCase().includes(searchText);
+                
+                // Day filter
+                const matchesDay = dayValue === '' || 
+                    course.day1 === dayValue || 
+                    course.day2 === dayValue;
+                
+                // Time filter
+                const matchesTime = timeValue === '' || 
+                    course.time1.includes(timeValue) || 
+                    course.time2.includes(timeValue);
+                
+                // Type filter
+                const matchesType = typeValue === '' || course.type === typeValue;
+                
+                return matchesText && matchesDay && matchesTime && matchesType;
+            });
+            
+            displayCourses(filteredCourses);
+        }
+
+        // Display courses in the results section
+        function displayCourses(courses) {
+            if (courses.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-courses">No courses match your search criteria</div>';
+                return;
+            }
+            
+            // Group courses by title
+            const coursesByTitle = {};
+            courses.forEach(course => {
+                const key = course.formalCode + '|' + course.title;
+                if (!coursesByTitle[key]) {
+                    coursesByTitle[key] = [];
+                }
+                coursesByTitle[key].push(course);
+            });
+            
+            // Generate HTML for each course group
+            let html = '';
+            for (const key in coursesByTitle) {
+                const [formalCode, title] = key.split('|');
+                const courseSections = coursesByTitle[key];
+                
+                html += `
+                    <div class="course-card">
+                        <div class="course-header" onclick="toggleSections(this)">
+                            <div class="course-title">${formalCode} - ${title}</div>
+                            <div class="course-info">
+                                <span>${courseSections.length} sections</span>
+                                <span>${courseSections[0].credits} credits</span>
+                                <span>${courseSections[0].type}</span>
+                            </div>
+                        </div>
+                        <div class="sections-container">
+                `;
+                
+                courseSections.forEach(section => {
+                    const isSelected = selectedCourses.some(c => c.sectionName === section.sectionName);
+                    
+                    html += `
+                        <div class="section-item">
+                            <div class="section-info">
+                                <div class="section-time">${section.time1} ${section.day1} | ${section.time2} ${section.day2}</div>
+                                <div class="section-days">Section: ${section.sectionName}</div>
+                                <div class="section-teacher">Teachers: ${section.teacher1} ${section.teacher2 ? ', ' + section.teacher2 : ''}</div>
+                            </div>
+                            <div class="section-action">
+                                ${isSelected ? 
+                                    `<button class="btn-remove" onclick="removeCourse('${section.sectionName}')">Remove</button>` :
+                                    `<button class="btn-add" onclick="addCourse('${section.sectionName}')">Add</button>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            resultsContainer.innerHTML = html;
+        }
+
+        // Toggle section visibility
+        function toggleSections(element) {
+            const sectionsContainer = element.nextElementSibling;
+            sectionsContainer.style.display = sectionsContainer.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Add a course to the schedule
+        function addCourse(sectionName) {
+            const course = classData.find(c => c.sectionName === sectionName);
+            if (!course) return;
+            
+            // Check for time conflicts
+            const hasConflict = checkTimeConflict(course);
+            if (hasConflict) {
+                alert('This course conflicts with another course in your schedule!');
+                return;
+            }
+            
+            // Check credit limit
+            const newTotalCredits = calculateTotalCredits() + course.credits;
+            if (newTotalCredits > 19) {
+                alert('You have exceeded the maximum credit limit of 19!');
+         
