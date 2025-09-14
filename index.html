@@ -1,702 +1,449 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Routine Visualizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f0f2f5;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        
-        .description {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-        
-        .upload-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .upload-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            align-items: center;
-        }
-        
-        input, select, button {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        
-        input[type="file"] {
-            flex: 1;
-            padding: 10px;
-        }
-        
-        button {
-            background: #3498db;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        button:hover {
-            background: #2980b9;
-        }
-        
-        .credit-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .credit-control input {
-            width: 80px;
-        }
-        
-        .results-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .course-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .course-header {
-            background: #ecf0f1;
-            padding: 15px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .course-title {
-            font-weight: bold;
-            font-size: 18px;
-            color: #2c3e50;
-        }
-        
-        .course-info {
-            display: flex;
-            gap: 15px;
-            font-size: 14px;
-            color: #7f8c8d;
-        }
-        
-        .sections-container {
-            display: none;
-            padding: 0;
-        }
-        
-        .section-item {
-            padding: 15px;
-            border-top: 1px solid #eee;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .section-info {
-            flex: 1;
-            min-width: 250px;
-        }
-        
-        .section-time {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .section-days {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-        
-        .section-teacher {
-            color: #7f8c8d;
-            font-style: italic;
-        }
-        
-        .section-action {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn-add {
-            background: #27ae60;
-            padding: 8px 15px;
-            font-size: 14px;
-        }
-        
-        .btn-add:hover {
-            background: #219653;
-        }
-        
-        .btn-remove {
-            background: #e74c3c;
-            padding: 8px 15px;
-            font-size: 14px;
-        }
-        
-        .btn-remove:hover {
-            background: #c0392b;
-        }
-        
-        .schedule-section {
-            margin-top: 30px;
-        }
-        
-        .schedule-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .credit-info {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .schedule-table th {
-            background: #34495e;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .schedule-table td {
-            padding: 12px;
-            text-align: center;
-            border: 1px solid #eee;
-            height: 80px;
-            vertical-align: top;
-        }
-        
-        .time-cell {
-            background: #f8f9fa;
-            font-weight: bold;
-            width: 120px;
-        }
-        
-        .course-slot {
-            background: #d6eaf8;
-            border-radius: 4px;
-            padding: 8px;
-            font-size: 14px;
-            margin-bottom: 5px;
-            cursor: pointer;
-        }
-        
-        .course-slot.conflict {
-            background: #f9d6d8;
-        }
-        
-        .no-courses {
-            text-align: center;
-            padding: 30px;
-            color: #7f8c8d;
-            font-style: italic;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
-            font-size: 14px;
-            border-top: 1px solid #eee;
-            margin-top: 30px;
-        }
-        
-        .conflict-warning {
-            background: #ffebee;
-            color: #c62828;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            display: none;
-        }
-        
-        @media (max-width: 768px) {
-            .schedule-table {
-                font-size: 14px;
-            }
-            
-            .course-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .section-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .section-action {
-                align-self: flex-end;
-            }
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Class Routine Visualizer</title>
+<style>
+  :root{
+    --accent:#0b76d1;
+    --muted:#666;
+    --bg:#f8fafc;
+    --cell:#ffffff;
+    --danger:#d9534f;
+  }
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:var(--bg);color:#111}
+  header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:white;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  header h1{margin:0;font-size:18px}
+  .container{display:grid;grid-template-columns:320px 1fr 320px;gap:12px;padding:12px}
+  .card{background:white;padding:12px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+  .small{font-size:13px;color:var(--muted)}
+  label{display:block;margin:8px 0 4px;font-weight:600;font-size:13px}
+  select,input[type=text],input[type=number]{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box}
+  button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,118,209,.12)}
+  .timetable{display:grid;grid-template-columns:90px repeat(5,1fr);gap:6px;align-items:stretch}
+  .slot-label{display:flex;align-items:center;justify-content:center;background:#fff;border-radius:6px;padding:6px;border:1px solid #eee;font-weight:600}
+  .cell{min-height:60px;background:var(--cell);border-radius:6px;padding:6px;border:1px solid #eee;font-size:13px;position:relative}
+  .cell .course{display:block;font-weight:700}
+  .cell .meta{display:block;font-size:12px;color:var(--muted)}
+  .cell .remove{position:absolute;right:6px;top:6px;background:transparent;border:0;color:#888;cursor:pointer}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .list{max-height:300px;overflow:auto;padding:6px;border:1px dashed #eee;border-radius:6px}
+  .section-item{display:flex;align-items:center;justify-content:space-between;padding:6px;border-bottom:1px solid #f2f2f2}
+  .badge{background:#eef6ff;color:var(--accent);padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px}
+  .selected-list{list-style:none;padding:0;margin:0}
+  .selected-list li{display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #f8f8f8}
+  .warn{color:var(--danger);font-weight:600}
+  footer{padding:12px;text-align:center;color:var(--muted);font-size:13px}
+  .top-stats{display:flex;gap:12px;align-items:center}
+  .top-stats .stat{background:#fff;padding:8px;border-radius:8px;border:1px solid #f0f0f0}
+  .flex-row{display:flex;gap:8px;align-items:center}
+  .search-row{display:flex;gap:8px}
+  .small-btn{padding:6px 8px;border-radius:6px;border:1px solid #eee;background:#fff;cursor:pointer}
+  input[type=file]{display:none}
+  .hint{font-size:12px;color:var(--muted)}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:18px}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Class Routine Visualizer</h1>
-            <p class="description">Upload your Excel file to visualize and plan your class schedule</p>
-        </header>
-        
-        <div class="main-content">
-            <div class="upload-section">
-                <div class="upload-box">
-                    <input type="file" id="excelFile" accept=".xlsx, .xls">
-                    <button id="uploadBtn">Upload</button>
-                </div>
-                
-                <div class="credit-control">
-                    <label for="maxCredits">Max Credits:</label>
-                    <input type="number" id="maxCredits" min="1" max="30" value="19">
-                    <button id="updateCredits">Update</button>
-                </div>
-            </div>
-            
-            <div class="conflict-warning" id="conflictWarning"></div>
-            
-            <div class="results-section" id="resultsContainer">
-                <div class="no-courses">Upload an Excel file to view courses</div>
-            </div>
-            
-            <div class="schedule-section">
-                <div class="schedule-header">
-                    <h2>My Weekly Schedule</h2>
-                    <div class="credit-info">Total Credits: <span id="totalCredits">0</span> / <span id="maxCreditsDisplay">19</span></div>
-                </div>
-                
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Saturday</th>
-                            <th>Sunday</th>
-                            <th>Monday</th>
-                            <th>Tuesday</th>
-                            <th>Wednesday</th>
-                        </tr>
-                    </thead>
-                    <tbody id="scheduleBody">
-                        <!-- Schedule will be generated here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <footer>
-            <p>Class Routine Visualizer - Plan your semester with no time conflicts</p>
-        </footer>
+<header>
+  <div style="display:flex;gap:12px;align-items:center">
+    <h1>Class Routine Visualizer</h1>
+    <div class="small hint">Loads <strong>full_routine.xlsx</strong> automatically (same folder) or use local file.</div>
+  </div>
+  <div class="top-stats">
+    <div class="stat" id="stat-credits">Credits: <strong>0</strong>/<span id="max-credits">17</span></div>
+    <div class="stat" id="stat-courses">Courses: <strong>0</strong></div>
+    <div class="stat" id="stat-days">Days on campus: <strong>0</strong></div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Left: Controls & Hierarchical selector -->
+  <div class="card">
+    <label>Max Credit Limit</label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="dec-max" class="small-btn">-</button>
+      <input id="input-max" type="number" min="0" value="17" style="width:84px" />
+      <button id="inc-max" class="small-btn">+</button>
+      <button id="save-max" class="small-btn ghost">Save</button>
+    </div>
+    <div style="margin-top:8px" class="small hint">Max credit limit is dynamic — can be increased for special cases.</div>
+
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
+
+    <label>Data Loading</label>
+    <div class="controls">
+      <button id="btn-load-server" class="small-btn">Load /full_routine.xlsx</button>
+      <label class="small-btn" style="cursor:pointer">
+        Load local file
+        <input id="file-input" type="file" accept=".xlsx,.xls" />
+      </label>
+      <button id="btn-reset-data" class="small-btn">Reset Data</button>
+    </div>
+    <div style="margin-top:8px" class="hint">If fetch from `/full_routine.xlsx` fails, load local file.</div>
+
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
+
+    <label>Search Course / Section</label>
+    <div class="search-row">
+      <input id="search-input" type="text" placeholder="Search by any column (course, code, section...)" />
+      <button id="btn-search" class="small-btn">Search</button>
+    </div>
+    <div id="search-results" class="list" style="margin-top:8px;min-height:80px"><div class="empty">No results</div></div>
+
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
+
+    <label>Selection (hierarchical)</label>
+    <div style="display:grid;gap:8px">
+      <select id="sel-category"><option value="">-- Select Category --</option></select>
+      <select id="sel-course"><option value="">-- Select Course --</option></select>
+      <select id="sel-time"><option value="">-- Select Time slot --</option></select>
+      <div id="sections-available" class="list"><div class="empty">No sections</div></div>
+      <div style="display:flex;gap:8px">
+        <button id="btn-add-section" class="small-btn">Add Selected Section</button>
+        <button id="btn-remove-conflicts" class="small-btn ghost">Remove Conflicting Options</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle: Timetable -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>Weekly Timetable (5 time slots)</strong>
+      <div class="flex-row">
+        <button id="btn-auto-solve" class="small-btn">Auto-solve (optimize)</button>
+        <button id="btn-reset" class="small-btn ghost">Reset Selection</button>
+      </div>
     </div>
 
-    <script>
-        // Global variables
-        let classData = [];
-        let selectedCourses = [];
-        let maxCredits = 19;
-        const timeSlots = [
-            "08:30:AM - 10:00:AM",
-            "10:00:AM - 11:30:AM",
-            "11:30:AM - 01:00:PM",
-            "01:30:PM - 03:00:PM",
-            "03:00:PM - 04:30:PM"
-        ];
-        const days = ["Sat", "Sun", "Mon", "Tue", "Wed"];
+    <div style="margin-top:12px;overflow:auto">
+      <div class="timetable" id="timetable">
+        <!-- grid will be built by JS -->
+      </div>
+    </div>
 
-        // DOM elements
-        const excelFileInput = document.getElementById('excelFile');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const maxCreditsInput = document.getElementById('maxCredits');
-        const updateCreditsBtn = document.getElementById('updateCredits');
-        const maxCreditsDisplay = document.getElementById('maxCreditsDisplay');
-        const resultsContainer = document.getElementById('resultsContainer');
-        const scheduleBody = document.getElementById('scheduleBody');
-        const totalCreditsEl = document.getElementById('totalCredits');
-        const conflictWarning = document.getElementById('conflictWarning');
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
 
-        // Initialize the application
-        function init() {
-            // Generate initial schedule
-            generateSchedule();
-            
-            // Set up event listeners
-            uploadBtn.addEventListener('click', handleFileUpload);
-            updateCreditsBtn.addEventListener('click', updateMaxCredits);
-        }
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="export-state" class="small-btn">Export State</button>
+      <label class="small-btn" style="cursor:pointer">Import State
+        <input id="import-state-file" type="file" accept=".json" />
+      </label>
+      <button id="btn-save-local" class="small-btn ghost">Save to local</button>
+    </div>
 
-        // Handle file upload
-        function handleFileUpload() {
-            const file = excelFileInput.files[0];
-            if (!file) {
-                alert('Please select an Excel file first.');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                // Assuming the first sheet contains the data
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                
-                // Process the data (skip the header row)
-                processExcelData(jsonData.slice(1));
-            };
-            reader.readAsArrayBuffer(file);
-        }
+    <div style="margin-top:12px">
+      <strong>Selected Sections</strong>
+      <ul id="selected-list" class="selected-list"></ul>
+      <div id="selected-empty" class="empty">No sections selected</div>
+    </div>
+  </div>
 
-        // Process Excel data
-        function processExcelData(data) {
-            classData = [];
-            
-            data.forEach(row => {
-                if (row.length >= 11) {
-                    const course = {
-                        formalCode: row[0] || '',
-                        title: row[1] || '',
-                        sectionName: row[2] || '',
-                        day1: row[3] || '',
-                        day2: row[4] || '',
-                        time1: row[5] || '',
-                        time2: row[6] || '',
-                        teacher1: row[7] || '',
-                        teacher2: row[8] || '',
-                        credits: parseFloat(row[10]) || 0,
-                        type: (row[1] || '').toLowerCase().includes('lab') ? 'Lab' : 'Theory'
-                    };
-                    classData.push(course);
-                }
+  <!-- Right: Details, conflicts, metadata -->
+  <div class="card">
+    <label>Legend & Actions</label>
+    <div class="small hint">Click a cell to toggle selection. Selecting a section will remove/mark conflicting sections below.</div>
+
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
+
+    <label>Conflicting Sections (if any)</label>
+    <div id="conflicts-list" class="list"><div class="empty">No conflicts</div></div>
+
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
+
+    <label>Quick controls</label>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button id="btn-show-all" class="small-btn">Show All Sections</button>
+      <button id="btn-hide-unavailable" class="small-btn ghost">Hide Conflicting</button>
+      <button id="btn-export-json" class="small-btn">Export Parsed Data (JSON)</button>
+      <button id="btn-clear-storage" class="small-btn ghost">Clear Local Storage</button>
+    </div>
+
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
+    <div class="small hint">NOTE: "Save to local" stores current selection + parsed routine into your browser <code>localStorage</code>. Use Export/Import to move between machines.</div>
+  </div>
+</div>
+
+<footer>Built for Bangladeshi CSE student style — interactive schedule visualizer • No server-side code required</footer>
+
+<!-- SheetJS (xlsx) for reading Excel in browser -->
+<script src="https://cdn.sheetjs.com/xlsx-0.19.2/package/dist/xlsx.full.min.js"></script>
+
+<script>
+/*
+  Class Routine Visualizer
+  - expects an xlsx with rows describing class sections
+  - flexible header detection (Category, Course, CourseName, Section, Day, TimeSlot/Slot, Credits, Type)
+  - stores state in localStorage under 'class_visualizer_state'
+*/
+
+(function(){
+  // --- state ---
+  const STATE_KEY = 'class_visualizer_state_v1';
+  let parsedData = []; // array of section objects
+  let selectedSections = []; // array of section ids
+  let maxCredits = 17;
+
+  // timetable structure: days Mon-Fri, slots 1-5
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri'];
+  const SLOTS = [1,2,3,4,5];
+
+  // DOM refs
+  const el = id => document.getElementById(id);
+  const selCategory = el('sel-category');
+  const selCourse = el('sel-course');
+  const selTime = el('sel-time');
+  const sectionsAvailable = el('sections-available');
+  const timetable = el('timetable');
+  const statCredits = el('stat-credits');
+  const statCourses = el('stat-courses');
+  const statDays = el('stat-days');
+  const inputMax = el('input-max');
+  const maxCreditsLabel = el('max-credits');
+  const selectedList = el('selected-list');
+  const selectedEmpty = el('selected-empty');
+  const conflictsList = el('conflicts-list');
+  const searchResults = el('search-results');
+
+  // utilities
+  function uid(section){ return `${section.Course||section.CourseName||section.Name}__${section.Section||section.Sec||section.SectionNo||Math.random().toString(36).slice(2,8)}`; }
+
+  function defaultHeadersMap(headers){
+    // map likely headers to our fields
+    const map = {};
+    headers.forEach((h,i)=>{
+      const key = h.toString().trim().toLowerCase();
+      if(/category|dept|faculty/.test(key)) map.Category = h;
+      if(/course name|coursename|title|subject|course/.test(key) && !map.CourseName) map.CourseName = h;
+      if(/course code|code|courseid|course id/.test(key) && !map.Course) map.Course = h;
+      if(/section|sec|section no/.test(key)) map.Section = h;
+      if(/day|weekday/.test(key)) map.Day = h;
+      if(/time|slot|timeslot|period/.test(key)) map.TimeSlot = h;
+      if(/credit|credits|cr/.test(key)) map.Credits = h;
+      if(/type|class type|theory|lab/.test(key)) map.Type = h;
+    });
+    return map;
+  }
+
+  // render timetable grid
+  function buildTimetableGrid(){
+    timetable.innerHTML = '';
+    // first row header
+    const empty = document.createElement('div'); empty.className='slot-label'; empty.textContent='';
+    timetable.appendChild(empty);
+    for(const d of DAYS){
+      const h = document.createElement('div'); h.className='slot-label'; h.textContent=d;
+      timetable.appendChild(h);
+    }
+    // rows for each slot
+    for(const slot of SLOTS){
+      const label = document.createElement('div'); label.className='slot-label'; label.textContent='Slot '+slot;
+      timetable.appendChild(label);
+      for(const day of DAYS){
+        const cell = document.createElement('div'); cell.className='cell'; cell.dataset.day=day; cell.dataset.slot=slot;
+        cell.innerHTML = `<div class="empty">—</div>`;
+        cell.addEventListener('click',(e)=>{ onCellClick(cell); });
+        timetable.appendChild(cell);
+      }
+    }
+  }
+
+  // place sections into timetable cells (but we show only selected ones as placed)
+  function refreshTimetable(){
+    // clear all cells
+    const cells = timetable.querySelectorAll('.cell');
+    cells.forEach(c=>{
+      c.innerHTML = `<div class="empty">—</div>`;
+      c.dataset.sectionIds = '';
+    });
+
+    // for visibility, we can also show available sections in each cell as faint list
+    // build map day-slot -> list
+    const map = {};
+    parsedData.forEach(s=>{
+      const key = (s.Day||'').toString().trim();
+      const slot = s.TimeSlot;
+      if(!key || !slot) return;
+      const k = `${key}__${slot}`;
+      map[k] = map[k] || [];
+      map[k].push(s);
+    });
+
+    // show all available sections as small entries (not selected)
+    for(const day of DAYS){
+      for(const slot of SLOTS){
+        const key = `${day}__${slot}`;
+        const list = map[key]||[];
+        const cell = timetable.querySelector(`.cell[data-day="${day}"][data-slot="${slot}"]`);
+        if(!cell) continue;
+        cell.innerHTML = ''; // reset
+        // if any selected among these, show only selected prominently
+        const selHere = list.filter(s=> selectedSections.includes(s._id));
+        if(selHere.length){
+          // show selected(s)
+          selHere.forEach(s=>{
+            const block = document.createElement('div');
+            block.className='placed';
+            block.innerHTML = `<span class="course">${s.CourseName || s.Course} <small class="meta">[${s.Section}] ${s.Credits||0}cr</small></span>`;
+            const rm = document.createElement('button'); rm.className='remove'; rm.innerHTML='✕';
+            rm.addEventListener('click',(ev)=>{ ev.stopPropagation(); toggleSelectSection(s._id,false); });
+            block.appendChild(rm);
+            cell.appendChild(block);
+          });
+        } else {
+          // show available options compact
+          if(list.length===0){
+            cell.innerHTML = `<div class="empty">—</div>`;
+          } else {
+            list.forEach(s=>{
+              const div = document.createElement('div'); div.className='course-available';
+              div.style.fontSize='12px'; div.style.padding='4px 2px';
+              div.textContent = `${s.CourseName||s.Course} [${s.Section}] (${s.Credits||0}cr)`;
+              div.title = `Category: ${s.Category||'-'} | Type: ${s.Type||'-'}`;
+              div.addEventListener('click', (ev)=>{ ev.stopPropagation(); tryAddSectionById(s._id); });
+              cell.appendChild(div);
             });
-            
-            displayCourses(classData);
+          }
         }
+      }
+    }
 
-        // Display courses in the results section
-        function displayCourses(courses) {
-            if (courses.length === 0) {
-                resultsContainer.innerHTML = '<div class="no-courses">No courses found in the Excel file</div>';
-                return;
-            }
-            
-            // Group courses by title
-            const coursesByTitle = {};
-            courses.forEach(course => {
-                const key = course.formalCode + '|' + course.title;
-                if (!coursesByTitle[key]) {
-                    coursesByTitle[key] = [];
-                }
-                coursesByTitle[key].push(course);
-            });
-            
-            // Generate HTML for each course group
-            let html = '';
-            for (const key in coursesByTitle) {
-                const [formalCode, title] = key.split('|');
-                const courseSections = coursesByTitle[key];
-                
-                html += `
-                    <div class="course-card">
-                        <div class="course-header" onclick="toggleSections(this)">
-                            <div class="course-title">${formalCode} - ${title}</div>
-                            <div class="course-info">
-                                <span>${courseSections.length} sections</span>
-                                <span>${courseSections[0].credits} credits</span>
-                                <span>${courseSections[0].type}</span>
-                            </div>
-                        </div>
-                        <div class="sections-container">
-                `;
-                
-                courseSections.forEach(section => {
-                    const isSelected = selectedCourses.some(c => c.sectionName === section.sectionName);
-                    const conflicts = checkTimeConflict(section);
-                    
-                    html += `
-                        <div class="section-item">
-                            <div class="section-info">
-                                <div class="section-time">${section.time1} ${section.day1} | ${section.time2} ${section.day2}</div>
-                                <div class="section-days">Section: ${section.sectionName}</div>
-                                <div class="section-teacher">Teachers: ${section.teacher1} ${section.teacher2 ? ', ' + section.teacher2 : ''}</div>
-                            </div>
-                            <div class="section-action">
-                                ${isSelected ? 
-                                    `<button class="btn-remove" onclick="removeCourse('${section.sectionName}')">Remove</button>` :
-                                    `<button class="btn-add" onclick="addCourse('${section.sectionName}')">Add</button>`
-                                }
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-            }
-            
-            resultsContainer.innerHTML = html;
+    // check conflicts display
+    refreshConflictsPanel();
+    refreshSelectedList();
+    refreshHeaderStats();
+  }
+
+  // get section object by id
+  function findSectionById(id){ return parsedData.find(s=>s._id===id); }
+
+  // select/unselect logic with conflict detection
+  function toggleSelectSection(id, select=true){
+    const sec = findSectionById(id); if(!sec) return;
+    if(select){
+      // check overlap with existing selectedSections
+      const conflict = selectedSections.find(selId=>{
+        const s2 = findSectionById(selId);
+        return s2 && s2.Day===sec.Day && s2.TimeSlot==sec.TimeSlot;
+      });
+      if(conflict){
+        // remove the old conflicting one
+        // but per requirement, selecting a section should remove conflicting sections
+        selectedSections = selectedSections.filter(sid=>sid!==conflict);
+      }
+      // check credit limit
+      const total = currentCredits();
+      if(total + (Number(sec.Credits)||0) > maxCredits){
+        alert('Adding this section exceeds max credit limit. Increase max credit or remove other sections.');
+        return;
+      }
+      if(!selectedSections.includes(id)) selectedSections.push(id);
+    } else {
+      selectedSections = selectedSections.filter(sid=>sid!==id);
+    }
+    autosaveState();
+    refreshTimetable();
+  }
+
+  function tryAddSectionById(id){
+    toggleSelectSection(id,true);
+  }
+
+  function currentCredits(){
+    return selectedSections.reduce((sum,id)=>{
+      const s=findSectionById(id); return sum + (s?Number(s.Credits||0):0);
+    },0);
+  }
+
+  function refreshHeaderStats(){
+    maxCreditsLabel.textContent = maxCredits;
+    const total = currentCredits();
+    statCredits.querySelector('strong').textContent = total;
+    statCourses.querySelector('strong').textContent = selectedSections.length;
+    // days present
+    const days = new Set(selectedSections.map(id=> findSectionById(id)?.Day ).filter(Boolean));
+    statDays.querySelector('strong').textContent = days.size;
+    inputMax.value = maxCredits;
+  }
+
+  // show selected sections list
+  function refreshSelectedList(){
+    selectedList.innerHTML = '';
+    if(selectedSections.length===0){
+      selectedEmpty.style.display='block';
+    } else {
+      selectedEmpty.style.display='none';
+      selectedSections.forEach(id=>{
+        const s=findSectionById(id);
+        const li = document.createElement('li');
+        li.innerHTML = `<div><strong>${s.CourseName||s.Course}</strong> <div class="small">${s.Section} • ${s.Day} S${s.TimeSlot} • ${s.Credits||0}cr • ${s.Type||''}</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="small-btn" title="Remove" data-id="${id}">Remove</button>
+          </div>`;
+        li.querySelector('button').addEventListener('click',()=>{ toggleSelectSection(id,false); });
+        selectedList.appendChild(li);
+      });
+    }
+  }
+
+  // conflicts panel
+  function refreshConflictsPanel(){
+    conflictsList.innerHTML = '';
+    const conflicts = {};
+    // for each selected sec, find others that share day+slot
+    selectedSections.forEach(id=>{
+      const s=findSectionById(id);
+      parsedData.forEach(other=>{
+        if(other._id===id) return;
+        if(other.Day===s.Day && other.TimeSlot==s.TimeSlot){
+          conflicts[s._id] = conflicts[s._id]||new Set();
+          conflicts[s._id].add(other._id);
         }
+      });
+    });
+    const keys = Object.keys(conflicts);
+    if(keys.length===0){
+      conflictsList.innerHTML = '<div class="empty">No conflicts</div>';
+      return;
+    }
+    keys.forEach(k=>{
+      const s=findSectionById(k);
+      const h = document.createElement('div'); h.style.padding='6px 0';
+      h.innerHTML = `<div style="font-weight:700">${s.CourseName||s.Course} [${s.Section}] — conflicts with:</div>`;
+      const ul = document.createElement('div'); ul.style.marginTop='6px';
+      conflicts[k].forEach(cid=>{
+        const o=findSectionById(cid);
+        const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='4px 0';
+        row.innerHTML = `<div>${o.CourseName||o.Course} [${o.Section}] • ${o.Credits||0}cr</div>
+          <div><button class="small-btn" data-id="${cid}">Remove</button></div>`;
+        row.querySelector('button').addEventListener('click',()=>{ toggleSelectSection(cid,false); });
+        ul.appendChild(row);
+      });
+      h.appendChild(ul);
+      conflictsList.appendChild(h);
+    });
+  }
 
-        // Toggle section visibility
-        function toggleSections(element) {
-            const sectionsContainer = element.nextElementSibling;
-            sectionsContainer.style.display = sectionsContainer.style.display === 'block' ? 'none' : 'block';
-        }
-
-        // Add a course to the schedule
-        function addCourse(sectionName) {
-            const course = classData.find(c => c.sectionName === sectionName);
-            if (!course) return;
-            
-            // Check for time conflicts
-            const conflicts = checkTimeConflict(course);
-            if (conflicts.length > 0) {
-                showConflictWarning(course, conflicts);
-                return;
-            }
-            
-            // Check credit limit
-            const newTotalCredits = calculateTotalCredits() + course.credits;
-            if (newTotalCredits > maxCredits) {
-                alert(`You have exceeded the maximum credit limit of ${maxCredits}!`);
-                return;
-            }
-            
-            selectedCourses.push(course);
-            updateSchedule();
-            displayCourses(classData); // Refresh the course list to update buttons
-        }
-
-        // Remove a course from the schedule
-        function removeCourse(sectionName) {
-            selectedCourses = selectedCourses.filter(c => c.sectionName !== sectionName);
-            updateSchedule();
-            displayCourses(classData); // Refresh the course list to update buttons
-        }
-
-        // Check for time conflicts
-        function checkTimeConflict(newCourse) {
-            const conflicts = [];
-            
-            for (const course of selectedCourses) {
-                // Check day1 and time1 conflict
-                if (newCourse.day1 && course.day1 && newCourse.day1 === course.day1 && 
-                    newCourse.time1 === course.time1) {
-                    conflicts.push(course);
-                }
-                
-                // Check day1 and time2 conflict
-                if (newCourse.day1 && course.day2 && newCourse.day1 === course.day2 && 
-                    newCourse.time1 === course.time2 && newCourse.time2 !== '-') {
-                    conflicts.push(course);
-                }
-                
-                // Check day2 and time1 conflict
-                if (newCourse.day2 && course.day1 && newCourse.day2 === course.day1 && 
-                    newCourse.time2 === course.time1 && newCourse.time2 !== '-') {
-                    conflicts.push(course);
-                }
-                
-                // Check day2 and time2 conflict
-                if (newCourse.day2 && course.day2 && newCourse.day2 === course.day2 && 
-                    newCourse.time2 === course.time2 && newCourse.time2 !== '-') {
-                    conflicts.push(course);
-                }
-            }
-            
-            return conflicts;
-        }
-
-        // Show conflict warning
-        function showConflictWarning(newCourse, conflicts) {
-            let conflictText = `This course conflicts with: `;
-            conflictText += conflicts.map(c => `${c.formalCode} (${c.sectionName})`).join(', ');
-            conflictText += `<br><br>Adding this course will remove the conflicting ones. <button onclick="resolveConflictAndAdd('${newCourse.sectionName}')">Proceed</button>`;
-            
-            conflictWarning.innerHTML = conflictText;
-            conflictWarning.style.display = 'block';
-        }
-
-        // Resolve conflict and add course
-        function resolveConflictAndAdd(sectionName) {
-            const course = classData.find(c => c.sectionName === sectionName);
-            if (!course) return;
-            
-            // Find conflicts
-            const conflicts = checkTimeConflict(course);
-            
-            // Remove conflicting courses
-            selectedCourses = selectedCourses.filter(c => !conflicts.some(conflict => conflict.sectionName === c.sectionName));
-            
-            // Add the new course
-            selectedCourses.push(course);
-            
-            // Update UI
-            updateSchedule();
-            displayCourses(classData);
-            conflictWarning.style.display = 'none';
-        }
-
-        // Calculate total credits
-        function calculateTotalCredits() {
-            return selectedCourses.reduce((total, course) => total + course.credits, 0);
-        }
-
-        // Update max credits
-        function updateMaxCredits() {
-            const newMax = parseInt(maxCreditsInput.value);
-            if (isNaN(newMax) || newMax < 1) {
-                alert('Please enter a valid number for max credits');
-                return;
-            }
-            
-            maxCredits = newMax;
-            maxCreditsDisplay.textContent = maxCredits;
-            
-            // Check if current selection exceeds new limit
-            const currentCredits = calculateTotalCredits();
-            if (currentCredits > maxCredits) {
-                alert(`Your current selection exceeds the new credit limit. Please remove some courses.`);
-            }
-        }
-
-        // Generate the schedule table
-        function generateSchedule() {
-            let html = '';
-            
-            timeSlots.forEach(timeSlot => {
-                html += `<tr>`;
-                html += `<td class="time-cell">${timeSlot}</td>`;
-                
-                days.forEach(day => {
-                    html += `<td data-day="${day}" data-time="${timeSlot}"></td>`;
-                });
-                
-                html += `</tr>`;
-            });
-            
-            scheduleBody.innerHTML = html;
-        }
-
-        // Update the schedule with selected courses
-        function updateSchedule() {
-            // Clear all cells
-            const cells = document.querySelectorAll('#scheduleBody td');
-            cells.forEach(cell => {
-                if (!cell.classList.contains('time-cell')) {
-                    cell.innerHTML = '';
-                }
-            });
-            
-            // Add courses to schedule
-            selectedCourses.forEach(course => {
-                // Add first day/time
-                if (course.day1 && course.time1 && course.time1 !== '-') {
-                    const cell = document.querySelector(`td[data-day="${course.day1}"][data-time="${course.time1}"]`);
-                    if (cell) {
-                        cell.innerHTML += `
-                            <div class="course-slot" onclick="removeCourse('${course.sectionName}')">
-                                ${course.formalCode}<br>
-                                ${course.sectionName}<br>
-                                ${course.teacher1}
-                            </div>
-                        `;
-                    }
-                }
-                
-                // Add second day/time
-                if (course.day2 && course.time2 && course.time2 !== '-') {
-                    const cell = document.querySelector(`td[data-day="${course.day2}"][data-time="${course.time2}"]`);
-                    if (cell) {
-                        cell.innerHTML += `
-                            <div class="course-slot" onclick="removeCourse('${course.sectionName}')">
-                                ${course.formalCode}<br>
-                                ${course.sectionName}<br>
-                                ${course.teacher2}
-                            </div>
-                        `;
-                    }
-                }
-            });
-            
-            // Update credit count
-            totalCreditsEl.textContent = calculateTotalCredits();
-        }
-
-        // Initialize the application when the page loads
-        window.onload = init;
-    </script>
-</body>
-</html>
+  // hierarchical selectors refresh
+  function refreshCategoryOptions(){
+    const cats = Array.from(new Set(parsedData.map(s=>s.Category||'Other'))).sort();
+    selCategory.innerHTML = '<option value="">-- Select Category --</option>';
+    cats.forEach(c=> selCategory.appendChild(new Option(c,c)));
+    refreshCourseOptions();
+  }
+  function refreshCourseOptions(){
+    const cat = selCategory.value;
+    const courses = Array.from(new Set(parsedData.filter(s=>!cat||s.Category===cat).map(s=> s.CourseName||s.Course ))).sort();
+    selCourse.innerHTML = '<option value="">-- Select Course --</option>';
+    courses.forEach(c=> selCourse.appendChild(new Option(c,c)));
+    refreshTimeOptions();
+  }
+  function refreshTimeOptions(){
+    const cat = selCategory.value;
+    const crs = selCourse.value;
+    const times = Array.from(new Set(parsedData.filter(s=> (!cat||s.Category===cat) && ( !crs|| (s.CourseName===crs || s.Course===crs) ) ).map(s=>s.TimeSlot))).sort((a,b)=>a-b);
+    selTime.innerHTML = '<option value="">-- Select Time slot --</option>';
+    times.forEach(t=> selTime.appendChild(new Option('Slot '+t,t)));
+    refreshSect
