@@ -1,449 +1,227 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Class Routine Visualizer</title>
-<style>
-  :root{
-    --accent:#0b76d1;
-    --muted:#666;
-    --bg:#f8fafc;
-    --cell:#ffffff;
-    --danger:#d9534f;
-  }
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:var(--bg);color:#111}
-  header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:white;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-  header h1{margin:0;font-size:18px}
-  .container{display:grid;grid-template-columns:320px 1fr 320px;gap:12px;padding:12px}
-  .card{background:white;padding:12px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-  .small{font-size:13px;color:var(--muted)}
-  label{display:block;margin:8px 0 4px;font-weight:600;font-size:13px}
-  select,input[type=text],input[type=number]{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box}
-  button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
-  button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,118,209,.12)}
-  .timetable{display:grid;grid-template-columns:90px repeat(5,1fr);gap:6px;align-items:stretch}
-  .slot-label{display:flex;align-items:center;justify-content:center;background:#fff;border-radius:6px;padding:6px;border:1px solid #eee;font-weight:600}
-  .cell{min-height:60px;background:var(--cell);border-radius:6px;padding:6px;border:1px solid #eee;font-size:13px;position:relative}
-  .cell .course{display:block;font-weight:700}
-  .cell .meta{display:block;font-size:12px;color:var(--muted)}
-  .cell .remove{position:absolute;right:6px;top:6px;background:transparent;border:0;color:#888;cursor:pointer}
-  .controls{display:flex;gap:8px;flex-wrap:wrap}
-  .list{max-height:300px;overflow:auto;padding:6px;border:1px dashed #eee;border-radius:6px}
-  .section-item{display:flex;align-items:center;justify-content:space-between;padding:6px;border-bottom:1px solid #f2f2f2}
-  .badge{background:#eef6ff;color:var(--accent);padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px}
-  .selected-list{list-style:none;padding:0;margin:0}
-  .selected-list li{display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #f8f8f8}
-  .warn{color:var(--danger);font-weight:600}
-  footer{padding:12px;text-align:center;color:var(--muted);font-size:13px}
-  .top-stats{display:flex;gap:12px;align-items:center}
-  .top-stats .stat{background:#fff;padding:8px;border-radius:8px;border:1px solid #f0f0f0}
-  .flex-row{display:flex;gap:8px;align-items:center}
-  .search-row{display:flex;gap:8px}
-  .small-btn{padding:6px 8px;border-radius:6px;border:1px solid #eee;background:#fff;cursor:pointer}
-  input[type=file]{display:none}
-  .hint{font-size:12px;color:var(--muted)}
-  .empty{color:var(--muted);font-size:13px;text-align:center;padding:18px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semester Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 </head>
-<body>
-<header>
-  <div style="display:flex;gap:12px;align-items:center">
-    <h1>Class Routine Visualizer</h1>
-    <div class="small hint">Loads <strong>full_routine.xlsx</strong> automatically (same folder) or use local file.</div>
-  </div>
-  <div class="top-stats">
-    <div class="stat" id="stat-credits">Credits: <strong>0</strong>/<span id="max-credits">17</span></div>
-    <div class="stat" id="stat-courses">Courses: <strong>0</strong></div>
-    <div class="stat" id="stat-days">Days on campus: <strong>0</strong></div>
-  </div>
-</header>
+<body class="bg-gray-50">
+  <div id="root" class="p-6"></div>
 
-<div class="container">
-  <!-- Left: Controls & Hierarchical selector -->
-  <div class="card">
-    <label>Max Credit Limit</label>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button id="dec-max" class="small-btn">-</button>
-      <input id="input-max" type="number" min="0" value="17" style="width:84px" />
-      <button id="inc-max" class="small-btn">+</button>
-      <button id="save-max" class="small-btn ghost">Save</button>
-    </div>
-    <div style="margin-top:8px" class="small hint">Max credit limit is dynamic — can be increased for special cases.</div>
+  <script type="text/babel">
+    const { useState } = React;
 
-    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
-
-    <label>Data Loading</label>
-    <div class="controls">
-      <button id="btn-load-server" class="small-btn">Load /full_routine.xlsx</button>
-      <label class="small-btn" style="cursor:pointer">
-        Load local file
-        <input id="file-input" type="file" accept=".xlsx,.xls" />
-      </label>
-      <button id="btn-reset-data" class="small-btn">Reset Data</button>
-    </div>
-    <div style="margin-top:8px" class="hint">If fetch from `/full_routine.xlsx` fails, load local file.</div>
-
-    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
-
-    <label>Search Course / Section</label>
-    <div class="search-row">
-      <input id="search-input" type="text" placeholder="Search by any column (course, code, section...)" />
-      <button id="btn-search" class="small-btn">Search</button>
-    </div>
-    <div id="search-results" class="list" style="margin-top:8px;min-height:80px"><div class="empty">No results</div></div>
-
-    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
-
-    <label>Selection (hierarchical)</label>
-    <div style="display:grid;gap:8px">
-      <select id="sel-category"><option value="">-- Select Category --</option></select>
-      <select id="sel-course"><option value="">-- Select Course --</option></select>
-      <select id="sel-time"><option value="">-- Select Time slot --</option></select>
-      <div id="sections-available" class="list"><div class="empty">No sections</div></div>
-      <div style="display:flex;gap:8px">
-        <button id="btn-add-section" class="small-btn">Add Selected Section</button>
-        <button id="btn-remove-conflicts" class="small-btn ghost">Remove Conflicting Options</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Middle: Timetable -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <strong>Weekly Timetable (5 time slots)</strong>
-      <div class="flex-row">
-        <button id="btn-auto-solve" class="small-btn">Auto-solve (optimize)</button>
-        <button id="btn-reset" class="small-btn ghost">Reset Selection</button>
-      </div>
-    </div>
-
-    <div style="margin-top:12px;overflow:auto">
-      <div class="timetable" id="timetable">
-        <!-- grid will be built by JS -->
-      </div>
-    </div>
-
-    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
-
-    <div style="display:flex;gap:8px;align-items:center">
-      <button id="export-state" class="small-btn">Export State</button>
-      <label class="small-btn" style="cursor:pointer">Import State
-        <input id="import-state-file" type="file" accept=".json" />
-      </label>
-      <button id="btn-save-local" class="small-btn ghost">Save to local</button>
-    </div>
-
-    <div style="margin-top:12px">
-      <strong>Selected Sections</strong>
-      <ul id="selected-list" class="selected-list"></ul>
-      <div id="selected-empty" class="empty">No sections selected</div>
-    </div>
-  </div>
-
-  <!-- Right: Details, conflicts, metadata -->
-  <div class="card">
-    <label>Legend & Actions</label>
-    <div class="small hint">Click a cell to toggle selection. Selecting a section will remove/mark conflicting sections below.</div>
-
-    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
-
-    <label>Conflicting Sections (if any)</label>
-    <div id="conflicts-list" class="list"><div class="empty">No conflicts</div></div>
-
-    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
-
-    <label>Quick controls</label>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button id="btn-show-all" class="small-btn">Show All Sections</button>
-      <button id="btn-hide-unavailable" class="small-btn ghost">Hide Conflicting</button>
-      <button id="btn-export-json" class="small-btn">Export Parsed Data (JSON)</button>
-      <button id="btn-clear-storage" class="small-btn ghost">Clear Local Storage</button>
-    </div>
-
-    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
-    <div class="small hint">NOTE: "Save to local" stores current selection + parsed routine into your browser <code>localStorage</code>. Use Export/Import to move between machines.</div>
-  </div>
-</div>
-
-<footer>Built for Bangladeshi CSE student style — interactive schedule visualizer • No server-side code required</footer>
-
-<!-- SheetJS (xlsx) for reading Excel in browser -->
-<script src="https://cdn.sheetjs.com/xlsx-0.19.2/package/dist/xlsx.full.min.js"></script>
-
-<script>
-/*
-  Class Routine Visualizer
-  - expects an xlsx with rows describing class sections
-  - flexible header detection (Category, Course, CourseName, Section, Day, TimeSlot/Slot, Credits, Type)
-  - stores state in localStorage under 'class_visualizer_state'
-*/
-
-(function(){
-  // --- state ---
-  const STATE_KEY = 'class_visualizer_state_v1';
-  let parsedData = []; // array of section objects
-  let selectedSections = []; // array of section ids
-  let maxCredits = 17;
-
-  // timetable structure: days Mon-Fri, slots 1-5
-  const DAYS = ['Mon','Tue','Wed','Thu','Fri'];
-  const SLOTS = [1,2,3,4,5];
-
-  // DOM refs
-  const el = id => document.getElementById(id);
-  const selCategory = el('sel-category');
-  const selCourse = el('sel-course');
-  const selTime = el('sel-time');
-  const sectionsAvailable = el('sections-available');
-  const timetable = el('timetable');
-  const statCredits = el('stat-credits');
-  const statCourses = el('stat-courses');
-  const statDays = el('stat-days');
-  const inputMax = el('input-max');
-  const maxCreditsLabel = el('max-credits');
-  const selectedList = el('selected-list');
-  const selectedEmpty = el('selected-empty');
-  const conflictsList = el('conflicts-list');
-  const searchResults = el('search-results');
-
-  // utilities
-  function uid(section){ return `${section.Course||section.CourseName||section.Name}__${section.Section||section.Sec||section.SectionNo||Math.random().toString(36).slice(2,8)}`; }
-
-  function defaultHeadersMap(headers){
-    // map likely headers to our fields
-    const map = {};
-    headers.forEach((h,i)=>{
-      const key = h.toString().trim().toLowerCase();
-      if(/category|dept|faculty/.test(key)) map.Category = h;
-      if(/course name|coursename|title|subject|course/.test(key) && !map.CourseName) map.CourseName = h;
-      if(/course code|code|courseid|course id/.test(key) && !map.Course) map.Course = h;
-      if(/section|sec|section no/.test(key)) map.Section = h;
-      if(/day|weekday/.test(key)) map.Day = h;
-      if(/time|slot|timeslot|period/.test(key)) map.TimeSlot = h;
-      if(/credit|credits|cr/.test(key)) map.Credits = h;
-      if(/type|class type|theory|lab/.test(key)) map.Type = h;
-    });
-    return map;
-  }
-
-  // render timetable grid
-  function buildTimetableGrid(){
-    timetable.innerHTML = '';
-    // first row header
-    const empty = document.createElement('div'); empty.className='slot-label'; empty.textContent='';
-    timetable.appendChild(empty);
-    for(const d of DAYS){
-      const h = document.createElement('div'); h.className='slot-label'; h.textContent=d;
-      timetable.appendChild(h);
+    // Utility: Parse Excel
+    function parseExcel(file, callback) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        callback(json);
+      };
+      reader.readAsArrayBuffer(file);
     }
-    // rows for each slot
-    for(const slot of SLOTS){
-      const label = document.createElement('div'); label.className='slot-label'; label.textContent='Slot '+slot;
-      timetable.appendChild(label);
-      for(const day of DAYS){
-        const cell = document.createElement('div'); cell.className='cell'; cell.dataset.day=day; cell.dataset.slot=slot;
-        cell.innerHTML = `<div class="empty">—</div>`;
-        cell.addEventListener('click',(e)=>{ onCellClick(cell); });
-        timetable.appendChild(cell);
-      }
-    }
-  }
 
-  // place sections into timetable cells (but we show only selected ones as placed)
-  function refreshTimetable(){
-    // clear all cells
-    const cells = timetable.querySelectorAll('.cell');
-    cells.forEach(c=>{
-      c.innerHTML = `<div class="empty">—</div>`;
-      c.dataset.sectionIds = '';
-    });
+    function App() {
+      const [courses, setCourses] = useState([]);
+      const [selected, setSelected] = useState([]);
+      const [maxCredits, setMaxCredits] = useState(15);
 
-    // for visibility, we can also show available sections in each cell as faint list
-    // build map day-slot -> list
-    const map = {};
-    parsedData.forEach(s=>{
-      const key = (s.Day||'').toString().trim();
-      const slot = s.TimeSlot;
-      if(!key || !slot) return;
-      const k = `${key}__${slot}`;
-      map[k] = map[k] || [];
-      map[k].push(s);
-    });
-
-    // show all available sections as small entries (not selected)
-    for(const day of DAYS){
-      for(const slot of SLOTS){
-        const key = `${day}__${slot}`;
-        const list = map[key]||[];
-        const cell = timetable.querySelector(`.cell[data-day="${day}"][data-slot="${slot}"]`);
-        if(!cell) continue;
-        cell.innerHTML = ''; // reset
-        // if any selected among these, show only selected prominently
-        const selHere = list.filter(s=> selectedSections.includes(s._id));
-        if(selHere.length){
-          // show selected(s)
-          selHere.forEach(s=>{
-            const block = document.createElement('div');
-            block.className='placed';
-            block.innerHTML = `<span class="course">${s.CourseName || s.Course} <small class="meta">[${s.Section}] ${s.Credits||0}cr</small></span>`;
-            const rm = document.createElement('button'); rm.className='remove'; rm.innerHTML='✕';
-            rm.addEventListener('click',(ev)=>{ ev.stopPropagation(); toggleSelectSection(s._id,false); });
-            block.appendChild(rm);
-            cell.appendChild(block);
+      // Load routine file
+      function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (file) {
+          parseExcel(file, (rows) => {
+            // Assume row[0] headers: Course, Section, Day, Time, Credit
+            const parsed = rows.slice(1).map((r) => ({
+              course: r[0],
+              section: r[1],
+              day: r[2],
+              time: r[3],
+              credit: Number(r[4]) || 0,
+            }));
+            setCourses(parsed);
           });
-        } else {
-          // show available options compact
-          if(list.length===0){
-            cell.innerHTML = `<div class="empty">—</div>`;
-          } else {
-            list.forEach(s=>{
-              const div = document.createElement('div'); div.className='course-available';
-              div.style.fontSize='12px'; div.style.padding='4px 2px';
-              div.textContent = `${s.CourseName||s.Course} [${s.Section}] (${s.Credits||0}cr)`;
-              div.title = `Category: ${s.Category||'-'} | Type: ${s.Type||'-'}`;
-              div.addEventListener('click', (ev)=>{ ev.stopPropagation(); tryAddSectionById(s._id); });
-              cell.appendChild(div);
-            });
-          }
         }
       }
-    }
 
-    // check conflicts display
-    refreshConflictsPanel();
-    refreshSelectedList();
-    refreshHeaderStats();
-  }
-
-  // get section object by id
-  function findSectionById(id){ return parsedData.find(s=>s._id===id); }
-
-  // select/unselect logic with conflict detection
-  function toggleSelectSection(id, select=true){
-    const sec = findSectionById(id); if(!sec) return;
-    if(select){
-      // check overlap with existing selectedSections
-      const conflict = selectedSections.find(selId=>{
-        const s2 = findSectionById(selId);
-        return s2 && s2.Day===sec.Day && s2.TimeSlot==sec.TimeSlot;
-      });
-      if(conflict){
-        // remove the old conflicting one
-        // but per requirement, selecting a section should remove conflicting sections
-        selectedSections = selectedSections.filter(sid=>sid!==conflict);
-      }
-      // check credit limit
-      const total = currentCredits();
-      if(total + (Number(sec.Credits)||0) > maxCredits){
-        alert('Adding this section exceeds max credit limit. Increase max credit or remove other sections.');
-        return;
-      }
-      if(!selectedSections.includes(id)) selectedSections.push(id);
-    } else {
-      selectedSections = selectedSections.filter(sid=>sid!==id);
-    }
-    autosaveState();
-    refreshTimetable();
-  }
-
-  function tryAddSectionById(id){
-    toggleSelectSection(id,true);
-  }
-
-  function currentCredits(){
-    return selectedSections.reduce((sum,id)=>{
-      const s=findSectionById(id); return sum + (s?Number(s.Credits||0):0);
-    },0);
-  }
-
-  function refreshHeaderStats(){
-    maxCreditsLabel.textContent = maxCredits;
-    const total = currentCredits();
-    statCredits.querySelector('strong').textContent = total;
-    statCourses.querySelector('strong').textContent = selectedSections.length;
-    // days present
-    const days = new Set(selectedSections.map(id=> findSectionById(id)?.Day ).filter(Boolean));
-    statDays.querySelector('strong').textContent = days.size;
-    inputMax.value = maxCredits;
-  }
-
-  // show selected sections list
-  function refreshSelectedList(){
-    selectedList.innerHTML = '';
-    if(selectedSections.length===0){
-      selectedEmpty.style.display='block';
-    } else {
-      selectedEmpty.style.display='none';
-      selectedSections.forEach(id=>{
-        const s=findSectionById(id);
-        const li = document.createElement('li');
-        li.innerHTML = `<div><strong>${s.CourseName||s.Course}</strong> <div class="small">${s.Section} • ${s.Day} S${s.TimeSlot} • ${s.Credits||0}cr • ${s.Type||''}</div></div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <button class="small-btn" title="Remove" data-id="${id}">Remove</button>
-          </div>`;
-        li.querySelector('button').addEventListener('click',()=>{ toggleSelectSection(id,false); });
-        selectedList.appendChild(li);
-      });
-    }
-  }
-
-  // conflicts panel
-  function refreshConflictsPanel(){
-    conflictsList.innerHTML = '';
-    const conflicts = {};
-    // for each selected sec, find others that share day+slot
-    selectedSections.forEach(id=>{
-      const s=findSectionById(id);
-      parsedData.forEach(other=>{
-        if(other._id===id) return;
-        if(other.Day===s.Day && other.TimeSlot==s.TimeSlot){
-          conflicts[s._id] = conflicts[s._id]||new Set();
-          conflicts[s._id].add(other._id);
+      // Add/remove course
+      function addCourse(c) {
+        if (!selected.find((s) => s.course === c.course && s.section === c.section)) {
+          setSelected([...selected, c]);
         }
-      });
-    });
-    const keys = Object.keys(conflicts);
-    if(keys.length===0){
-      conflictsList.innerHTML = '<div class="empty">No conflicts</div>';
-      return;
-    }
-    keys.forEach(k=>{
-      const s=findSectionById(k);
-      const h = document.createElement('div'); h.style.padding='6px 0';
-      h.innerHTML = `<div style="font-weight:700">${s.CourseName||s.Course} [${s.Section}] — conflicts with:</div>`;
-      const ul = document.createElement('div'); ul.style.marginTop='6px';
-      conflicts[k].forEach(cid=>{
-        const o=findSectionById(cid);
-        const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='4px 0';
-        row.innerHTML = `<div>${o.CourseName||o.Course} [${o.Section}] • ${o.Credits||0}cr</div>
-          <div><button class="small-btn" data-id="${cid}">Remove</button></div>`;
-        row.querySelector('button').addEventListener('click',()=>{ toggleSelectSection(cid,false); });
-        ul.appendChild(row);
-      });
-      h.appendChild(ul);
-      conflictsList.appendChild(h);
-    });
-  }
+      }
+      function removeCourse(c) {
+        setSelected(selected.filter((s) => !(s.course === c.course && s.section === c.section)));
+      }
 
-  // hierarchical selectors refresh
-  function refreshCategoryOptions(){
-    const cats = Array.from(new Set(parsedData.map(s=>s.Category||'Other'))).sort();
-    selCategory.innerHTML = '<option value="">-- Select Category --</option>';
-    cats.forEach(c=> selCategory.appendChild(new Option(c,c)));
-    refreshCourseOptions();
-  }
-  function refreshCourseOptions(){
-    const cat = selCategory.value;
-    const courses = Array.from(new Set(parsedData.filter(s=>!cat||s.Category===cat).map(s=> s.CourseName||s.Course ))).sort();
-    selCourse.innerHTML = '<option value="">-- Select Course --</option>';
-    courses.forEach(c=> selCourse.appendChild(new Option(c,c)));
-    refreshTimeOptions();
-  }
-  function refreshTimeOptions(){
-    const cat = selCategory.value;
-    const crs = selCourse.value;
-    const times = Array.from(new Set(parsedData.filter(s=> (!cat||s.Category===cat) && ( !crs|| (s.CourseName===crs || s.Course===crs) ) ).map(s=>s.TimeSlot))).sort((a,b)=>a-b);
-    selTime.innerHTML = '<option value="">-- Select Time slot --</option>';
-    times.forEach(t=> selTime.appendChild(new Option('Slot '+t,t)));
-    refreshSect
+      // Total credits
+      const totalCredits = selected.reduce((sum, c) => sum + c.credit, 0);
+
+      // Conflict detection
+      function hasConflict(course) {
+        return selected.some(
+          (s) => s.day === course.day && s.time === course.time
+        );
+      }
+
+      // Timetable grid
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu"];
+      const timeSlots = ["8-10", "10-12", "12-2", "2-4", "4-6"];
+
+      return (
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold">📅 Semester Planner</h1>
+
+          {/* File Upload */}
+          <div className="flex items-center space-x-4">
+            <input type="file" accept=".xlsx" onChange={handleFileUpload} />
+            <label className="font-semibold">Max Credits:</label>
+            <input
+              type="number"
+              className="border px-2 py-1 w-20"
+              value={maxCredits}
+              onChange={(e) => setMaxCredits(Number(e.target.value))}
+            />
+          </div>
+
+          {/* Available Courses */}
+          <div>
+            <h2 className="text-xl font-semibold">Available Courses</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border mt-2">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border px-2">Course</th>
+                    <th className="border px-2">Section</th>
+                    <th className="border px-2">Day</th>
+                    <th className="border px-2">Time</th>
+                    <th className="border px-2">Credit</th>
+                    <th className="border px-2">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {courses.map((c, i) => (
+                    <tr key={i} className={hasConflict(c) ? "bg-red-100" : ""}>
+                      <td className="border px-2">{c.course}</td>
+                      <td className="border px-2">{c.section}</td>
+                      <td className="border px-2">{c.day}</td>
+                      <td className="border px-2">{c.time}</td>
+                      <td className="border px-2">{c.credit}</td>
+                      <td className="border px-2">
+                        <button
+                          className="bg-blue-500 text-white px-2 py-1 rounded"
+                          onClick={() => addCourse(c)}
+                        >
+                          Add
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Selected Plan */}
+          <div>
+            <h2 className="text-xl font-semibold">My Semester Plan</h2>
+            <p className="mt-1">
+              Credits:{" "}
+              <span
+                className={
+                  totalCredits > maxCredits ? "text-red-600 font-bold" : "font-bold"
+                }
+              >
+                {totalCredits}
+              </span>{" "}
+              / {maxCredits}
+            </p>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border mt-2">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border px-2">Course</th>
+                    <th className="border px-2">Section</th>
+                    <th className="border px-2">Day</th>
+                    <th className="border px-2">Time</th>
+                    <th className="border px-2">Credit</th>
+                    <th className="border px-2">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selected.map((c, i) => (
+                    <tr key={i}>
+                      <td className="border px-2">{c.course}</td>
+                      <td className="border px-2">{c.section}</td>
+                      <td className="border px-2">{c.day}</td>
+                      <td className="border px-2">{c.time}</td>
+                      <td className="border px-2">{c.credit}</td>
+                      <td className="border px-2">
+                        <button
+                          className="bg-red-500 text-white px-2 py-1 rounded"
+                          onClick={() => removeCourse(c)}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Timetable */}
+          <div>
+            <h2 className="text-xl font-semibold">Weekly Timetable</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border mt-2 text-center">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border px-2">Time</th>
+                    {days.map((d) => (
+                      <th key={d} className="border px-2">{d}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeSlots.map((slot) => (
+                    <tr key={slot}>
+                      <td className="border px-2">{slot}</td>
+                      {days.map((d) => {
+                        const match = selected.find(
+                          (c) => c.day === d && c.time === slot
+                        );
+                        return (
+                          <td key={d} className="border px-2">
+                            {match ? (
+                              <span className="bg-green-200 px-2 rounded">
+                                {match.course} ({match.section})
+                              </span>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
