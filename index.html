@@ -1,227 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Semester Planner</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-<body class="bg-gray-50">
-  <div id="root" class="p-6"></div>
+<body>
+  <header>
+    <h1>Semester Planner</h1>
+    <div class="controls">
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+      <button id="loadDefault">Load Default Routine</button>
+      <label>
+        Max Credit:
+        <input type="number" id="maxCredit" value="18" min="1">
+      </label>
+    </div>
+  </header>
 
-  <script type="text/babel">
-    const { useState } = React;
+  <main>
+    <section class="courses">
+      <h2>Available Courses</h2>
+      <table id="courseTable">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Title</th>
+            <th>Section</th>
+            <th>Credit</th>
+            <th>Day</th>
+            <th>Time</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-    // Utility: Parse Excel
-    function parseExcel(file, callback) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-        callback(json);
-      };
-      reader.readAsArrayBuffer(file);
-    }
+    <section class="plan">
+      <h2>My Semester Plan</h2>
+      <table id="planTable">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Section</th>
+            <th>Credit</th>
+            <th>Day</th>
+            <th>Time</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="creditSummary">Total Credits: 0</p>
+      <p id="conflictWarning" class="warning"></p>
+    </section>
 
-    function App() {
-      const [courses, setCourses] = useState([]);
-      const [selected, setSelected] = useState([]);
-      const [maxCredits, setMaxCredits] = useState(15);
+    <section class="timetable">
+      <h2>Weekly Timetable</h2>
+      <div id="timetableGrid" class="grid"></div>
+    </section>
+  </main>
 
-      // Load routine file
-      function handleFileUpload(e) {
-        const file = e.target.files[0];
-        if (file) {
-          parseExcel(file, (rows) => {
-            // Assume row[0] headers: Course, Section, Day, Time, Credit
-            const parsed = rows.slice(1).map((r) => ({
-              course: r[0],
-              section: r[1],
-              day: r[2],
-              time: r[3],
-              credit: Number(r[4]) || 0,
-            }));
-            setCourses(parsed);
-          });
-        }
-      }
-
-      // Add/remove course
-      function addCourse(c) {
-        if (!selected.find((s) => s.course === c.course && s.section === c.section)) {
-          setSelected([...selected, c]);
-        }
-      }
-      function removeCourse(c) {
-        setSelected(selected.filter((s) => !(s.course === c.course && s.section === c.section)));
-      }
-
-      // Total credits
-      const totalCredits = selected.reduce((sum, c) => sum + c.credit, 0);
-
-      // Conflict detection
-      function hasConflict(course) {
-        return selected.some(
-          (s) => s.day === course.day && s.time === course.time
-        );
-      }
-
-      // Timetable grid
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu"];
-      const timeSlots = ["8-10", "10-12", "12-2", "2-4", "4-6"];
-
-      return (
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold">📅 Semester Planner</h1>
-
-          {/* File Upload */}
-          <div className="flex items-center space-x-4">
-            <input type="file" accept=".xlsx" onChange={handleFileUpload} />
-            <label className="font-semibold">Max Credits:</label>
-            <input
-              type="number"
-              className="border px-2 py-1 w-20"
-              value={maxCredits}
-              onChange={(e) => setMaxCredits(Number(e.target.value))}
-            />
-          </div>
-
-          {/* Available Courses */}
-          <div>
-            <h2 className="text-xl font-semibold">Available Courses</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full border mt-2">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border px-2">Course</th>
-                    <th className="border px-2">Section</th>
-                    <th className="border px-2">Day</th>
-                    <th className="border px-2">Time</th>
-                    <th className="border px-2">Credit</th>
-                    <th className="border px-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {courses.map((c, i) => (
-                    <tr key={i} className={hasConflict(c) ? "bg-red-100" : ""}>
-                      <td className="border px-2">{c.course}</td>
-                      <td className="border px-2">{c.section}</td>
-                      <td className="border px-2">{c.day}</td>
-                      <td className="border px-2">{c.time}</td>
-                      <td className="border px-2">{c.credit}</td>
-                      <td className="border px-2">
-                        <button
-                          className="bg-blue-500 text-white px-2 py-1 rounded"
-                          onClick={() => addCourse(c)}
-                        >
-                          Add
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Selected Plan */}
-          <div>
-            <h2 className="text-xl font-semibold">My Semester Plan</h2>
-            <p className="mt-1">
-              Credits:{" "}
-              <span
-                className={
-                  totalCredits > maxCredits ? "text-red-600 font-bold" : "font-bold"
-                }
-              >
-                {totalCredits}
-              </span>{" "}
-              / {maxCredits}
-            </p>
-            <div className="overflow-x-auto">
-              <table className="min-w-full border mt-2">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border px-2">Course</th>
-                    <th className="border px-2">Section</th>
-                    <th className="border px-2">Day</th>
-                    <th className="border px-2">Time</th>
-                    <th className="border px-2">Credit</th>
-                    <th className="border px-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selected.map((c, i) => (
-                    <tr key={i}>
-                      <td className="border px-2">{c.course}</td>
-                      <td className="border px-2">{c.section}</td>
-                      <td className="border px-2">{c.day}</td>
-                      <td className="border px-2">{c.time}</td>
-                      <td className="border px-2">{c.credit}</td>
-                      <td className="border px-2">
-                        <button
-                          className="bg-red-500 text-white px-2 py-1 rounded"
-                          onClick={() => removeCourse(c)}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Timetable */}
-          <div>
-            <h2 className="text-xl font-semibold">Weekly Timetable</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full border mt-2 text-center">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border px-2">Time</th>
-                    {days.map((d) => (
-                      <th key={d} className="border px-2">{d}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {timeSlots.map((slot) => (
-                    <tr key={slot}>
-                      <td className="border px-2">{slot}</td>
-                      {days.map((d) => {
-                        const match = selected.find(
-                          (c) => c.day === d && c.time === slot
-                        );
-                        return (
-                          <td key={d} className="border px-2">
-                            {match ? (
-                              <span className="bg-green-200 px-2 rounded">
-                                {match.course} ({match.section})
-                              </span>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
