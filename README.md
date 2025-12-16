@@ -31,7 +31,7 @@ You only need a modern web browser (Chrome, Firefox, Edge, Safari). No server in
 ### Installation
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/yourusername/gub-semester-planner.git](https://github.com/yourusername/gub-semester-planner.git)
+    git clone [https://github.com/yourusername/gub-semester-planner.git](https://github.com/gokawsar/GUBSP-Semester-Planner.git)](https://github.com/gokawsar/GUBSP-Semester-Planner.git)
     ```
 2.  **Open the app:**
     Navigate to the folder and open `index.html` in your browser.
@@ -44,9 +44,13 @@ You only need a modern web browser (Chrome, Firefox, Edge, Safari). No server in
 
 ## 📂 Project Structure
 gub-semester-planner/ 
+
 ├── index.html # Main application file (HTML/CSS/JS) 
+
 ├── ClassRoutine.csv # Sample routine data 
+
 ├── Schedules/ # Directory for auto-loading routines (optional) 
+
 └── README.md # Documentation
 
 ## 🤝 Contributing
