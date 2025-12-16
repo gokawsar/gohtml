@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GUB | Semester Planner</title>
+  <style>
+    :root{
+      --bg:#0e1116; --panel:#151a22; --muted:#8ba0b3; --text:#e5edf5; --accent:#50b5ff; --danger:#ff6b6b; --ok:#38d39f; --chip:#233142;
+      --grid-border:#2a3442; --slot-bg:#10151c; --break-bg:#0b1118; --offered-chip:#1b2531;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text)}
+
+    /* Top bar */
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--grid-border);background:#10161e;gap:14px;flex-wrap:wrap}
+    .topbar h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.3px}
+    .topbar .slots{font-size:11px;color:var(--muted)}
+    .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{padding:8px 10px;border-radius:8px;border:1px solid var(--grid-border);background:#0f141b;color:var(--text);cursor:pointer;font-size:12px}
+    .btn.primary{background:var(--accent);border-color:transparent;color:#04131f;font-weight:600}
+    .btn.small{padding:4px 8px;font-size:11px}
+
+    /* New narrow widths for day & break columns */
+    th.day-col{width:60px;}
+    td.break-cell, th.break-col{width:88px;}
+    td.break-cell{padding:4px;font-size:11px}
+    td.break-cell.evening{background:#12161d;color:#98a8b8}
+
+    /* Workspace layout: schedule + summary on right */
+    .workspace{display:flex;align-items:flex-start;gap:14px;padding:14px}
+    .scheduler{flex:1;background:var(--panel);border:1px solid var(--grid-border);border-radius:10px;overflow:visible;min-height:70vh;position:relative}
+
+    /* Summary panel moved to right */
+    #summaryPanel{width:300px;flex:0 0 300px;display:flex;flex-direction:column;gap:12px;background:var(--panel);border:1px solid var(--grid-border);border-radius:10px;padding:12px;position:sticky;top:8px;max-height:calc(100vh - 24px);overflow:auto}
+    #headerSummary{display:flex;flex-direction:column;gap:4px;font-size:11px}
+    #headerSummary .sel-line{display:flex;flex-wrap:wrap;gap:4px}
+    #headerSummary .label{font-weight:600;color:var(--accent)}
+    .chip-mini{background:#1b2531;border:1px solid #2a3a4a;padding:2px 6px;border-radius:999px;font-size:10px;line-height:1;display:inline-flex;gap:4px;align-items:center;color:#c9d7e6}
+    .chip-mini sup{font-size:8px;font-weight:600;margin-left:2px;color:var(--muted)}
+
+    .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
+    .summary-item{border:1px solid var(--grid-border);background:#0f141b;border-radius:6px;padding:6px}
+    .summary-item .title{font-size:11px;font-weight:600}
+    .summary-item .meta{font-size:10px;color:var(--muted)}
+    .credits-box{margin-top:4px;font-size:12px;font-weight:600}
+
+    .legend{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--grid-border);font-size:11px}
+    .legend .dot{width:10px;height:10px;border-radius:50%}
+
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    thead th{position:sticky;top:0;background:#0f141b;z-index:2}
+    th,td{border:1px solid var(--grid-border);padding:8px;vertical-align:top}
+    th{font-size:12px;color:#c9d7e6}
+    td{background:var(--slot-bg)}
+    .break-cell{background:var(--break-bg);text-align:center;color:var(--muted);font-weight:600}
+
+    .cell{display:flex;flex-direction:column;gap:6px}
+    .selected-list{display:flex;flex-direction:column;gap:6px}
+    .selected{border-left:4px solid var(--accent);background:#0e1520;padding:6px;border-radius:8px}
+    .selected .head{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+    .selected .sub{font-size:11px;color:var(--muted)}
+    .remove{cursor:pointer;background:transparent;border:1px solid #3a4657;color:#c9d7e6;border-radius:6px;padding:2px 6px;font-size:11px}
+
+    /* Dropdown options */
+    .options{position:relative;align-self:flex-start}
+    .options-btn{padding:4px 8px;border-radius:8px;border:1px solid var(--grid-border);background:#0f141b;color:var(--text);font-size:11px;cursor:pointer}
+    .options-btn:disabled{opacity:.35;cursor:not-allowed}
+    .options-menu{position:absolute;inset:auto auto auto 0;top:calc(100% + 4px);min-width:260px;max-width:430px;max-height:300px;overflow:auto;z-index:1000;background:#0f141b;border:1px solid var(--grid-border);border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.45);display:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    .options.open .options-menu{display:block}
+    .options-menu.drop-up{top:auto;bottom:calc(100% + 4px)}
+    .options-menu.align-right{left:auto;right:0}
+    .option-item{display:flex;gap:8px;padding:8px;border-bottom:1px solid #1f2732;cursor:pointer}
+    .option-item:last-child{border-bottom:none}
+    .option-item:hover{background:#12202e}
+    .option-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex:0 0 10px}
+    .option-title{font-size:12px;font-weight:600}
+    .option-meta{font-size:11px;color:var(--muted);line-height:1.3}
+
+    .selected-list.glow{outline:2px solid var(--accent); outline-offset:-2px; background:#0f1a24}
+
+    /* Modal for course finder */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:2000;padding:40px 18px 24px;overflow:auto}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--panel);border:1px solid var(--grid-border);border-radius:12px;max-width:900px;width:100%;display:flex;flex-direction:column;max-height:100%;}
+    .modal header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--grid-border);background:#111821}
+    .modal header h2{margin:0;font-size:15px;font-weight:600}
+    .modal .body{display:grid;grid-template-columns:300px 1fr;gap:12px;padding:14px;overflow:hidden}
+    .modal .filters{display:flex;flex-direction:column;gap:12px}
+    .panel-section{border:1px solid var(--grid-border);padding:10px;border-radius:10px}
+    .panel-section label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+    .panel-section input,.panel-section select{width:100%;padding:6px 7px;border-radius:6px;border:1px solid var(--grid-border);background:#0f141b;color:var(--text);font-size:12px}
+    .panel-section .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .results{flex:1;overflow:auto;padding:0 4px}
+    .card{border:1px solid var(--grid-border);background:#0f141b;border-radius:10px;padding:10px;margin-bottom:10px}
+    .card .title{font-size:14px;font-weight:600;margin-bottom:4px}
+    .card .actions{display:flex;gap:8px;margin-top:6px}
+
+    .notice{padding:8px 10px;background:#10202b;border-left:3px solid var(--accent);border-radius:8px;color:#cfe9ff;font-size:11px}
+    .error{padding:8px 10px;background:#2a1215;border-left:3px solid var(--danger);border-radius:8px;color:#ffc7cc;font-size:12px;margin:8px 0}
+
+    .muted{color:var(--muted)}
+    .hidden{display:none !important}
+
+    @media (max-width:1000px){
+      .workspace{flex-direction:column}
+      #summaryPanel{width:100%;order:-1;flex:auto;position:static}
+      .modal .body{grid-template-columns:1fr}
+      .topbar{position:sticky;top:0;z-index:1500}
+    }
+
+    /* Saved plans modal extra styles */
+    .plans-list{width:100%;border-collapse:collapse;font-size:12px}
+    .plans-list th,.plans-list td{border:1px solid var(--grid-border);padding:6px;text-align:left}
+    .plans-list th{background:#0f141b;position:sticky;top:0}
+    .plan-actions{display:flex;flex-wrap:wrap;gap:4px}
+    .tag{display:inline-block;padding:2px 6px;border-radius:999px;background:#1b2531;font-size:10px;border:1px solid #2a3a4a;margin-right:4px}
+    .inline-input{padding:4px 6px;border-radius:6px;border:1px solid var(--grid-border);background:#0f141b;color:var(--text);font-size:11px;width:120px}
+    .inline-select{padding:4px 6px;border-radius:6px;border:1px solid var(--grid-border);background:#0f141b;color:var(--text);font-size:11px;}
+  </style>
+  <!-- SheetJS (XLSX) for parsing Excel/CSV in-browser -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- html2canvas for PNG snapshots -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Semester Planner</h1>
+    <div class="slots">Slots: 08:30–10:00 | 10:00–11:30 | 11:30–13:00 | Break | 13:30–15:00 | 15:00–16:30 | Evening Break | 18:00–19:30 | 19:30–21:00</div>
+    <div class="top-actions">
+      <!-- File input and loader -->
+      <input id="fileInput" class="hidden" type="file" accept=".xlsx,.xls,.csv" />
+      <!-- New: folder picker for Auto-Load to list any files inside Schedules/ -->
+      <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple accept=".xlsx,.xls,.csv" />
+      <button class="btn primary" id="loadBtn">Load Excel/CSV</button>
+      <button class="btn" id="autoBtn" title="Find schedules in Schedules/">Auto-Load</button>
+      <select id="scheduleSelect" class="inline-select hidden" title="Pick a schedule file"></select>
+      <span id="scheduleTypeChip" class="chip-mini hidden" title="File type"></span>
+      <button class="btn small" id="savePngBtn" title="Download snapshot as PNG">Save PNG</button>
+      <button class="btn small" id="savePlanBtn" title="Save current selection">Save Plan</button>
+      <select id="planSelect" class="inline-select" title="Load a saved plan"><option value="">Load plan…</option></select>
+      <!-- New: delete saved plan button -->
+      <button class="btn small" id="deletePlanBtn" title="Delete selected saved plan">×</button>
+      <button class="btn small" id="clearBtn" title="Clear selection">Clear</button>
+      <span id="loadStatus" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <main class="scheduler">
+      <div class="legend">
+        <span class="dot" style="background:var(--accent)"></span> Select courses from each time slot's Options menu.
+      </div>
+      <table id="scheduleTable"></table>
+    </main>
+    <aside id="summaryPanel">
+      <div id="headerSummary" class="muted" style="font-size:11px">No selection</div>
+      <div class="summary-grid">
+        <div class="summary-item" id="summaryMeta">
+          <div class="title">Overview</div>
+          <div class="meta">No courses selected</div>
+          <div class="credits-box">Credits: <span id="creditCount">0</span></div>
+        </div>
+        <div class="summary-item" style="grid-column:1 / -1">
+          <div class="title">Theory</div>
+          <div id="summaryTheory"></div>
+        </div>
+        <div class="summary-item" style="grid-column:1 / -1">
+          <div class="title">Lab</div>
+          <div id="summaryLab"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal Finder -->
+  <div class="modal-overlay" id="courseModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="finderTitle">
+      <header>
+        <h2 id="finderTitle">Find & Select Courses</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+        </div>
+      </header>
+      <div class="body">
+        <div class="filters">
+        </div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved Plans Modal -->
+  <div class="modal-overlay" id="savedModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="savedTitle">
+      <header>
+        <h2 id="savedTitle" style="font-size:15px;margin:0">Saved Plans</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+        </div>
+      </header>
+      <div class="body" style="display:block;padding:14px;overflow:auto">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        </div>
+        <div id="plansEmpty" class="muted" style="font-size:12px">No saved plans yet.</div>
+        <div style="overflow:auto;max-height:60vh">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    // Constants
+    const DAYS = ['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
+    const SLOT_DEFS = [
+      { key:'S1', label:'08:30–10:00', start:'08:30 AM', end:'10:00 AM' },
+      { key:'S2', label:'10:00–11:30', start:'10:00 AM', end:'11:30 AM' },
+      { key:'S3', label:'11:30–13:00', start:'11:30 AM', end:'01:00 PM' },
+      { key:'BREAK', label:'Break', isBreak:true },
+      { key:'S4', label:'13:30–15:00', start:'01:30 PM', end:'03:00 PM' },
+      { key:'S5', label:'15:00–16:30', start:'03:00 PM', end:'04:30 PM' },
+      { key:'EBREAK', label:'Evening Break', isBreak:true },
+      { key:'S6', label:'18:00–19:30', start:'06:00 PM', end:'07:30 PM' },
+      { key:'S7', label:'19:30–21:00', start:'07:30 PM', end:'09:00 PM' },
+    ];
+
+    // State
+    const state = {
+      all: [],
+      allMap: new Map(),
+      offeredIndex: {},
+      selected: new Map(), // id -> sec
+      selectedSlots: {},
+      filters:{ program:'', batch:'', type:'', day:'', code:'', text:'' },
+      datasetKey: '',
+      // New: map for locally chosen files (from folder picker)
+      localFilesMap: new Map(),
+    };
+    let glowTargets = [];
+
+    // Utilities
+    function setStatus(msg, isError=false){
+      const el=document.getElementById('loadStatus'); if(!el) return; el.textContent=msg||''; el.style.color=isError? '#ff9aa4' : 'var(--muted)'; }
+    function toMinutes(hhmm){ if(!hhmm) return null; let s=String(hhmm).trim(); s=s.replace(/\u2013|\u2014/g,'-'); // dashes
+      const ampmMatch=s.match(/(\d{1,2})[:\. ]?(\d{2})?\s*:?\s*(AM|PM)/i);
+      if(ampmMatch){ let h=parseInt(ampmMatch[1],10); let m=parseInt(ampmMatch[2]||'0',10); const ap=ampmMatch[3].toUpperCase(); if(ap==='PM' && h!==12) h+=12; if(ap==='AM' && h===12) h=0; return h*60+m; }
+      const m2=s.match(/^(\d{1,2}):(\d{2})$/); if(m2) return parseInt(m2[1],10)*60+parseInt(m2[2],10); return null; }
+    function parseRange(range){ if(!range||typeof range!=='string') return null; const clean=range.replace(/\s+/g,''); const parts=clean.split('-'); if(parts.length<2) return null; const start=toMinutes(parts[0].replace(/\./g,':')); const end=toMinutes(parts[1].replace(/\./g,':')); if(start==null||end==null) return null; return {start,end}; }
+    function capDay(d){ if(!d) return ''; const s=String(d).trim(); const map={saturday:'Sat',sunday:'Sun',monday:'Mon',tuesday:'Tue',wednesday:'Wed',thursday:'Thu',friday:'Fri','sat':'Sat','sun':'Sun','mon':'Mon','tue':'Tue','wed':'Wed','thu':'Thu','fri':'Fri'}; const k=s.toLowerCase(); return map[k] || (s.charAt(0).toUpperCase()+s.slice(1,3).toLowerCase()); }
+    function hashColor(str){ let h=0; for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0;} const hue=Math.abs(h)%360; return `hsl(${hue} 70% 45%)`; }
+    function toHHMM(m){ const h=Math.floor(m/60), mm=m%60; const ap=h>=12?'PM':'AM'; const h12=((h+11)%12)+1; return `${String(h12).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${ap}`; }
+    function formatRange(s,e){ return toHHMM(s)+' - '+toHHMM(e); }
+    function timesOverlap(a,b){ return Math.max(0, Math.min(a.end,b.end) - Math.max(a.start,b.start)) >= 30; }
+    function overlapSlots(start,end,isLab){ const idxs=[]; SLOT_DEFS.forEach((sl,i)=>{ if(sl.isBreak) return; const sm=toMinutes(sl.start), em=toMinutes(sl.end); const oStart=Math.max(start,sm); const oEnd=Math.min(end,em); if(Math.max(0,oEnd-oStart)>=30) idxs.push(i); }); if(isLab && idxs.length===1){ const dur=end-start; if(dur>=110){ const i=idxs[0]; if(i+1<SLOT_DEFS.length) idxs.push(i+1);} } return Array.from(new Set(idxs)).sort((a,b)=>a-b); }
+
+    // Normalizer from Excel/CSV row -> section
+    function normalize(raw){
+      try{
+        const program = (raw['Program']||'').toString().trim();
+        const batch = (raw['Batch']||'').toString().trim();
+        const formal = (raw['FormalCode']||'').toString().trim();
+        const title = (raw['Title']||'').toString().trim();
+        const section = (raw['SectionName']||'').toString().trim();
+        const credits = Number((raw['Credits']||'').toString().trim());
+        if(!program || !batch || !formal || !title || !section || !Number.isFinite(credits)) return null;
+        const gst = (raw['GradeSheetTemplate']||'').toString();
+        const type = /(lab)/i.test(gst) || /lab/i.test(title) ? 'Lab' : 'Theory';
+        const teachers=[]; for(let i=1;i<=4;i++){ const t=(raw[`Teacher${i}`]||'').toString().trim(); if(t) teachers.push(t); }
+        const dayTimes=[];
+        for(let i=1;i<=4;i++){
+          const dRaw=(raw[`Day${i}`]||'').toString().trim();
+          const tRaw=(raw[`Time${i}`]||'').toString().trim();
+          if(!dRaw || !tRaw) continue;
+          const day=capDay(dRaw);
+          const rng=parseRange(tRaw);
+          if(!day || !rng) continue;
+          const room=(raw[`Room${i}`]||'').toString().trim();
+          const building=(raw[`Building${i}`]||'').toString().trim();
+          dayTimes.push({ day, start:rng.start, end:rng.end, room, building });
+        }
+        // De-duplicate day entries
+        const uniq=[]; const seen=new Set();
+        for(const dt of dayTimes){ const k=`${dt.day}|${dt.start}|${dt.end}|${dt.room}|${dt.building}`; if(!seen.has(k)){ seen.add(k); uniq.push(dt); } }
+        if(!uniq.length) return null;
+        const id = `${program}|${batch}|${formal}|${section}`;
+        return { id, program, batch, code:formal, title, section, credits, type, teachers:Array.from(new Set(teachers)), dayTimes: uniq };
+      }catch(err){ console.warn('Normalize error', err, raw); return null; }
+    }
+
+    function buildOfferedIndex(){ state.offeredIndex={}; DAYS.forEach(d=> state.offeredIndex[d]=SLOT_DEFS.map(()=>[])); state.all.forEach(sec=>{ sec.dayTimes.forEach(dt=>{ overlapSlots(dt.start,dt.end,sec.type==='Lab').forEach(si=>{ if(!state.offeredIndex[dt.day]) state.offeredIndex[dt.day]=SLOT_DEFS.map(()=>[]); state.offeredIndex[dt.day][si].push(sec.id); }); }); }); }
+
+    function selectedCourseCodes(){ const set=new Set(); state.selected.forEach(s=> set.add(s.code)); return set; }
+
+    function hasTimeConflict(candidate){
+      for(const sec2 of state.selected.values()){
+        for(const dt1 of candidate.dayTimes){
+          for(const dt2 of sec2.dayTimes){
+            if(dt1.day!==dt2.day) continue;
+            if(timesOverlap({start:dt1.start,end:dt1.end},{start:dt2.start,end:dt2.end})){
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    function getAvailableIds(day,sidx){
+      const ids=(state.offeredIndex[day]?.[sidx])||[];
+      if(!ids.length) return ids;
+      const taken=selectedCourseCodes();
+      return ids.filter(id=>{
+        const sec=state.allMap.get(id); if(!sec) return false;
+        if(taken.has(sec.code)) return false; // one section per course code
+        // Reject if selecting this section would conflict with current selection
+        return !hasTimeConflict(sec);
+      });
+    }
+
+    // Rendering
+    function ensureSchedulerShell(){
+      const table=document.getElementById('scheduleTable'); if(!table) return;
+      // Will be (re)built by renderTable
+    }
+
+    function renderTable(){
+      const table=document.getElementById('scheduleTable'); if(!table) return;
+      const thead=document.createElement('thead');
+      const trh=document.createElement('tr');
+      const thd=document.createElement('th'); thd.textContent='Day'; thd.className='day-col'; trh.appendChild(thd);
+      SLOT_DEFS.forEach(sl=>{ const th=document.createElement('th'); th.textContent=sl.label; if(sl.isBreak) th.classList.add('break-col'); trh.appendChild(th);});
+      thead.appendChild(trh);
+      const tbody=document.createElement('tbody');
+      DAYS.forEach(day=>{
+        const tr=document.createElement('tr');
+        const h=document.createElement('th'); h.textContent=day; tr.appendChild(h);
+        SLOT_DEFS.forEach((sl,sidx)=>{
+          if(sl.isBreak){
+            const td=document.createElement('td'); td.className='break-cell'+(sl.key==='EBREAK'?' evening':''); td.textContent=sl.label; tr.appendChild(td); return;
+          }
+          const td=document.createElement('td');
+          const cell=document.createElement('div'); cell.className='cell';
+          const slist=document.createElement('div'); slist.className='selected-list'; slist.dataset.day=day; slist.dataset.slot=String(sidx);
+          const options=document.createElement('div'); options.className='options';
+          const btn=document.createElement('button'); btn.className='options-btn'; btn.dataset.day=day; btn.dataset.slot=String(sidx); btn.textContent='Options';
+          const menu=document.createElement('div'); menu.className='options-menu';
+          btn.addEventListener('click', (e)=>{ e.stopPropagation(); document.querySelectorAll('.options.open').forEach(el=> el!==options && el.classList.remove('open')); options.classList.toggle('open'); if(options.classList.contains('open')){ buildOptionsMenu(menu,day,sidx); positionOptionsMenu(options,menu); }
+          });
+          menu.addEventListener('click', (e)=> e.stopPropagation());
+          options.appendChild(btn); options.appendChild(menu);
+          cell.appendChild(slist); cell.appendChild(options); td.appendChild(cell); tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.innerHTML=''; table.appendChild(thead); table.appendChild(tbody);
+      document.addEventListener('click',closeAllMenus,{once:false});
+      window.addEventListener('resize',closeAllMenus);
+      updateOptionCounts();
+    }
+
+    function updateOptionCounts(){ document.querySelectorAll('.options-btn').forEach(btn=>{ const day=btn.dataset.day; const slot=parseInt(btn.dataset.slot,10); const c=getAvailableIds(day,slot).length; btn.textContent=`Options${c?` (${c})`:''}`; btn.disabled=!c; }); }
+
+    function chipTitle(sec,day){ const dt=sec.dayTimes.find(x=>x.day===day); const timeHere=dt?formatRange(dt.start,dt.end):''; const other=sec.dayTimes.find(x=>x.day!==day); const otherTxt=other?`${other.day} ${formatRange(other.start,other.end)}`:(sec.type==='Lab'?'Lab (single day)':''); return `${sec.code} ${sec.section}\n${sec.title}\nHere: ${day} ${timeHere}${otherTxt?`\nOther: ${otherTxt}`:''}\nTeacher: ${(sec.teachers||[]).join(', ')}`.trim(); }
+
+    function buildOptionsMenu(menu,day,sidx){
+      menu.innerHTML='';
+      const ids=getAvailableIds(day,sidx);
+      if(!ids.length){ const empty=document.createElement('div'); empty.className='option-meta'; empty.style.padding='8px'; empty.textContent='No sections available'; menu.appendChild(empty); return; }
+      ids.slice(0,250).forEach((id)=>{
+        const sec=state.allMap.get(id); if(!sec) return; const color=hashColor(sec.code);
+        const item=document.createElement('div'); item.className='option-item'; item.title=chipTitle(sec,day); item.tabIndex=0;
+        const dot=document.createElement('div'); dot.className='option-dot'; dot.style.background=color;
+        const body=document.createElement('div'); body.style.flex='1';
+        const here=sec.dayTimes.find(x=>x.day===day);
+        const other=sec.dayTimes.find(x=>x.day!==day);
+        const hereStr=here?`${day} ${formatRange(here.start,here.end)} ${here.building||''}${here.room?'-'+here.room:''}`:'';
+        const otherStr=other?`Other: ${other.day} ${formatRange(other.start,other.end)}`:(sec.type==='Lab'?'Lab • single day':'');
+        const tNames=(sec.teachers||[]).join(', ');
+        body.innerHTML = `<div class="option-title">${sec.code} ${sec.section}</div><div class="option-meta">${sec.title}</div><div class="option-meta">${hereStr}${otherStr?` • ${otherStr}`:''}</div><div class="option-meta" style="color:#b2c6d8">${tNames}</div>`;
+        item.appendChild(dot); item.appendChild(body);
+        item.addEventListener('click',()=>{ trySelect(sec); closeAllMenus(); });
+        item.addEventListener('mouseenter',()=> highlightOtherDay(sec,day));
+        item.addEventListener('mouseleave',()=> clearGlow());
+        menu.appendChild(item);
+      });
+    }
+
+    function positionOptionsMenu(container,menu){ menu.classList.remove('drop-up','align-right'); menu.style.left=''; menu.style.right=''; menu.style.top=''; menu.style.bottom=''; const r=menu.getBoundingClientRect(); const vw=window.innerWidth, vh=window.innerHeight; if(r.right > vw-12) menu.classList.add('align-right'); if(r.bottom > vh-12) menu.classList.add('drop-up'); }
+    function closeAllMenus(){ document.querySelectorAll('.options.open').forEach(el=> el.classList.remove('open')); clearGlow(); }
+
+    function highlightOtherDay(sec,hoveredDay){ clearGlow(); const here=sec.dayTimes.find(x=>x.day===hoveredDay); if(here){ overlapSlots(here.start,here.end,sec.type==='Lab').forEach(si=>{ const el=document.querySelector(`.selected-list[data-day="${hoveredDay}"][data-slot="${si}"]`); if(el){ el.classList.add('glow'); glowTargets.push(el);} }); } if(sec.type==='Theory'){ const other=sec.dayTimes.find(x=>x.day!==hoveredDay); if(other){ overlapSlots(other.start,other.end,false).forEach(si=>{ const el=document.querySelector(`.selected-list[data-day="${other.day}"][data-slot="${si}"]`); if(el){ el.classList.add('glow'); glowTargets.push(el);} }); } } }
+    function clearGlow(){ glowTargets.forEach(el=> el.classList.remove('glow')); glowTargets=[]; }
+
+    function renderSelected(){
+      state.selectedSlots={}; DAYS.forEach(d=> state.selectedSlots[d]=SLOT_DEFS.map(()=>null));
+      document.querySelectorAll('.selected-list').forEach(el=> el.innerHTML='');
+      state.selected.forEach(sec=>{
+        sec.dayTimes.forEach(dt=>{
+          const idxs=overlapSlots(dt.start,dt.end,sec.type==='Lab');
+          idxs.forEach(si=>{
+            const target=document.querySelector(`.selected-list[data-day="${dt.day}"][data-slot="${si}"]`);
+            if(!target) return;
+            const chip=document.createElement('div'); chip.className='selected'; chip.style.borderLeftColor=hashColor(sec.code);
+            const head=document.createElement('div'); head.className='head';
+            head.innerHTML=`<div>${sec.code} <strong>${sec.section}</strong></div>`;
+            const rem=document.createElement('button'); rem.className='remove'; rem.textContent='Remove'; rem.addEventListener('click',()=> removeSelection(sec.id));
+            head.appendChild(rem);
+            const sub=document.createElement('div'); sub.className='sub';
+            const where=`${dt.day} ${formatRange(dt.start,dt.end)} ${dt.building||''}${dt.room?'-'+dt.room:''}`.trim();
+            sub.textContent=`${sec.title} • ${where}`;
+            chip.appendChild(head); chip.appendChild(sub);
+            chip.addEventListener('mouseenter',()=> highlightOtherDay(sec,dt.day));
+            chip.addEventListener('mouseleave',()=> clearGlow());
+            target.appendChild(chip);
+            state.selectedSlots[dt.day][si]=sec.id;
+          });
+        });
+      });
+      let credits=0; const theory=[], lab=[];
+      state.selected.forEach(s=>{ credits+=(Number(s.credits)||0); (s.type==='Lab'?lab:theory).push(s); });
+      const cc=document.getElementById('creditCount'); if(cc) cc.textContent=credits;
+      renderSummary(theory,lab);
+      updateHeaderSummary(theory,lab,credits);
+      updateOptionCounts();
+    }
+    function renderSummary(theory,lab){ const tEl=document.getElementById('summaryTheory'); const lEl=document.getElementById('summaryLab'); const mEl=document.getElementById('summaryMeta'); if(!tEl||!lEl||!mEl) return; const make=s=>`<div class="summary-item"><div class="title">${s.code}</div><div class="meta">${s.title}</div><div class="meta">${s.credits} cr • ${s.section}</div></div>`; tEl.innerHTML=theory.map(make).join(''); lEl.innerHTML=lab.map(make).join(''); const total=theory.length+lab.length; mEl.querySelector('.meta').textContent = total?`${theory.length} theory • ${lab.length} lab`:'No courses selected'; }
+    function updateHeaderSummary(theory,lab,credits){ const el=document.getElementById('headerSummary'); if(!el) return; if(!theory.length && !lab.length){ el.innerHTML='<div class="muted" style="font-size:11px">No selection</div>'; return;} const tCredits=theory.reduce((a,s)=>a+(Number(s.credits)||0),0); const lCredits=lab.reduce((a,s)=>a+(Number(s.credits)||0),0); const makeChip=s=>`<span class="chip-mini" title="${s.title.replace(/"/g,'&quot;')}">${s.code}<sup>${s.credits}</sup></span>`; el.innerHTML=`<div style="font-size:11px"><strong>${credits} cr</strong> — Theory ${tCredits} / Lab ${lCredits}</div>${theory.length?`<div class=\"sel-line\"><span class=\"label\">T:</span>${theory.map(makeChip).join('')}</div>`:''}${lab.length?`<div class=\"sel-line\"><span class=\"label\">L:</span>${lab.map(makeChip).join('')}</div>`:''}`; }
+
+    // Selection management
+    function trySelect(sec){
+      if(state.selected.has(sec.id)) { setStatus('Already selected', true); return; }
+      if(selectedCourseCodes().has(sec.code)) { setStatus('Course already selected for another section', true); return; }
+      if(hasTimeConflict(sec)) { setStatus('Time conflict with existing selection', true); return; }
+      state.selected.set(sec.id, sec);
+      setStatus('Added');
+      renderSelected();
+    }
+    function removeSelection(id){ if(state.selected.delete(id)){ renderSelected(); setStatus('Removed'); } }
+
+    // Plans persistence additions
+    const PLANS_KEY='planner_plans_v1';
+    function loadPlans(){ try{ return JSON.parse(localStorage.getItem(PLANS_KEY)||'[]'); }catch{ return []; } }
+    function savePlans(list){ localStorage.setItem(PLANS_KEY, JSON.stringify(list)); }
+    function deleteSelectedPlan(){ const sel=document.getElementById('planSelect'); if(!sel||!sel.value) return; if(!confirm('Delete this saved plan?')) return; const plans=loadPlans().filter(p=> p.id!==sel.value); savePlans(plans); refreshPlansDropdown(); sel.value=''; updateDeletePlanBtnState(); setStatus('Plan deleted'); }
+    function updateDeletePlanBtnState(){ const btn=document.getElementById('deletePlanBtn'); const sel=document.getElementById('planSelect'); if(btn) btn.disabled = !(sel && sel.value); }
+
+    // New: compute dataset signature for plan association
+    function computeDatasetKey(){
+      const ids=Array.from(state.allMap.keys()).slice(0,200);
+      let h=0; for(const id of ids){ for(let i=0;i<id.length;i++){ h=((h<<5)-h)+id.charCodeAt(i); h|=0; } }
+      return String(h);
+    }
+    // New: refresh plans dropdown options
+    function refreshPlansDropdown(){
+      const sel=document.getElementById('planSelect'); if(!sel) return; const plans=loadPlans(); const cur=sel.value;
+      sel.innerHTML='<option value="">Load plan…</option>' + plans.map((p,i)=>`<option value="${p.id}">${p.label||('Plan '+(i+1))} • ${new Date(p.savedAt).toLocaleString()}</option>`).join('');
+      if(cur) sel.value=cur; updateDeletePlanBtnState();
+    }
+    // New: save current selection as a plan
+    function saveCurrentPlan(){
+      if(!state.allMap.size){ setStatus('Load a schedule first', true); return; }
+      const name=prompt('Enter a name or Student ID for this plan:'); if(!name) return;
+      const ids=Array.from(state.selected.keys());
+      const credits=[...state.selected.values()].reduce((a,s)=>a+(Number(s.credits)||0),0);
+      const plans=loadPlans();
+      const plan={ id:Date.now()+':'+Math.random().toString(36).slice(2), label:String(name), savedAt:Date.now(), credits, ids, datasetKey: state.datasetKey||computeDatasetKey() };
+      plans.unshift(plan); savePlans(plans); refreshPlansDropdown(); setStatus('Plan saved');
+    }
+    // New: load a plan by id
+    function loadPlanById(pid){
+      const plans=loadPlans(); const p=plans.find(x=>x.id===pid); if(!p){ setStatus('Plan not found', true); return; }
+      const idsInDataset=p.ids.filter(id=> state.allMap.has(id));
+      state.selected.clear(); idsInDataset.forEach(id=> state.selected.set(id, state.allMap.get(id)));
+      renderSelected(); setStatus(`Loaded plan: ${p.label} (${idsInDataset.length}/${p.ids.length})`);
+    }
+
+    // Loading Excel/CSV
+    async function autoLoad(){
+      // Try Excel first from root as a convenience
+      try{
+        const res = await fetch('ClassRoutine.xlsx');
+        if(res.ok){ const buf=await res.arrayBuffer(); await parseWorkbook(XLSX.read(buf,{type:'array'})); setStatus('Loaded ClassRoutine.xlsx'); return; }
+      }catch(e){ /* ignore */ }
+      // Fallback CSV from root
+      try{
+        const res2 = await fetch('ClassRoutine.csv');
+        if(res2.ok){ const text=await res2.text(); const wb=XLSX.read(text,{type:'string'}); await parseWorkbook(wb); setStatus('Loaded ClassRoutine.csv'); return; }
+      }catch(e){ /* ignore */ }
+      setStatus('Pick a file: Excel/CSV');
+    }
+
+    async function parseWorkbook(wb){
+      const sheetName = wb.SheetNames[0]; if(!sheetName){ setStatus('No sheet found', true); return; }
+      const sheet = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval:'', raw:false });
+      const all=[]; const map=new Map();
+      rows.forEach(r=>{ const sec=normalize(r); if(!sec) return; if(map.has(sec.id)) return; map.set(sec.id,sec); all.push(sec); });
+      if(!all.length){ setStatus('No valid rows parsed', true); return; }
+      state.all = all; state.allMap = map; state.datasetKey=computeDatasetKey();
+      buildOfferedIndex();
+      renderTable();
+      state.selected.clear();
+      renderSelected();
+      updateOptionCounts();
+      hydrateFilters();
+    }
+
+    function handleFile(file){ if(!file) return; const name=file.name.toLowerCase(); const reader=new FileReader();
+      setStatus('Loading…');
+      if(name.endsWith('.csv')){
+        reader.onload = (e)=>{ try{ const text=e.target.result; const wb=XLSX.read(text,{type:'string'}); parseWorkbook(wb); }catch(err){ console.error(err); setStatus('Failed to parse CSV', true);} };
+        reader.readAsText(file);
+      } else if(name.endsWith('.xlsx') || name.endsWith('.xls')){
+        reader.onload = (e)=>{ try{ const buf=e.target.result; const wb=XLSX.read(buf,{type:'array'}); parseWorkbook(wb); }catch(err){ console.error(err); setStatus('Failed to parse Excel', true);} };
+        reader.readAsArrayBuffer(file);
+      } else { setStatus('Unsupported file type', true); }
+    }
+
+    // Auto-Load from Schedules folder
+    async function fetchSchedulesList(){
+      // Try manifest first
+      try{
+        const res=await fetch('Schedules/manifest.json');
+        if(res.ok){ const list = await res.json(); return Array.isArray(list) ? list.filter(n=>/\.(xlsx|xls|csv)$/i.test(n)) : []; }
+      }catch(e){ /* ignore */ }
+      // Heuristic fallback: probe a few common names
+      const candidates=['ClassRoutine.xlsx','ClassRoutine.csv','ClassRoutine_26.1.xlsx','ClassRoutine_26.1.csv','ClassRoutine_27.1.xlsx','ClassRoutine_27.1.csv'];
+      const found=[];
+      for(const f of candidates){ try{ const url='Schedules/'+f; const r=await fetch(url,{method:'HEAD'}); if(r.ok){ found.push(f); } }catch(e){ /* ignore */ } }
+      return found;
+    }
+
+    function baseFileName(fname){ return fname.replace(/\.(xlsx|xls|csv)$/i,''); }
+    function fileExt(fname){ return (fname.split('.').pop()||'').toUpperCase(); }
+
+    // New: populate dropdown from server list (returns count)
+    async function populateSchedulesDropdown(){
+      const sel=document.getElementById('scheduleSelect'); if(!sel) return 0; sel.innerHTML=''; sel.classList.add('hidden');
+      const chip=document.getElementById('scheduleTypeChip'); if(chip){ chip.classList.add('hidden'); chip.textContent=''; }
+      setStatus('Scanning Schedules/…');
+      const list=await fetchSchedulesList();
+      if(!list.length){ setStatus('No schedules found in Schedules/. You can still use Load Excel/CSV.', true); return 0; }
+      const opts=['<option value="">Pick schedule…</option>'].concat(list.map(f=>`<option value="${f}" data-ext="${fileExt(f)}">${baseFileName(f)}</option>`));
+      sel.innerHTML=opts.join(''); sel.classList.remove('hidden'); sel.focus(); setStatus(`Found ${list.length} schedule(s)`);
+      return list.length;
+    }
+
+    // New: populate dropdown from a locally-chosen folder
+    function populateSchedulesFromLocal(fileList){
+      const sel=document.getElementById('scheduleSelect'); if(!sel) return 0; sel.innerHTML='';
+      state.localFilesMap = new Map();
+      const chip=document.getElementById('scheduleTypeChip'); if(chip){ chip.classList.add('hidden'); chip.textContent=''; }
+      const files = Array.from(fileList||[]).filter(f=> /\.(xlsx|xls|csv)$/i.test(f.name));
+      if(!files.length){ setStatus('No Excel/CSV files in chosen folder', true); return 0; }
+      files.sort((a,b)=> a.name.localeCompare(b.name));
+      const frag=document.createDocumentFragment();
+      const placeholder=document.createElement('option'); placeholder.value=''; placeholder.textContent='Pick schedule…'; frag.appendChild(placeholder);
+      files.forEach((f,i)=>{
+        const key=(f.webkitRelativePath||f.name)+"|"+i; // unique key
+        state.localFilesMap.set(key,f);
+        const opt=document.createElement('option');
+        opt.value=key; opt.textContent=baseFileName(f.name);
+        opt.setAttribute('data-ext', fileExt(f.name));
+        opt.setAttribute('data-local','1');
+        frag.appendChild(opt);
+      });
+      sel.appendChild(frag);
+      sel.classList.remove('hidden');
+      setStatus(`Found ${files.length} schedule(s) in folder`);
+      return files.length;
+    }
+
+    // New: loader for local key from folder picker
+    function loadScheduleFromLocalKey(key){ const f=state.localFilesMap.get(key); if(!f){ setStatus('File not found in folder selection', true); return; } handleFile(f); }
+
+    // Existing: loader from Schedules/ path (server)
+    async function loadScheduleFromFolder(filename){ if(!filename) return; const url='Schedules/'+filename; setStatus('Loading '+filename+' …');
+      try{
+        if(/csv$/i.test(filename)){
+          const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
+          const text=await res.text(); const wb=XLSX.read(text,{type:'string'}); await parseWorkbook(wb); setStatus('Loaded '+filename);
+        } else if(/xlsx$|xls$/i.test(filename)){
+          const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
+          const buf=await res.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'}); await parseWorkbook(wb); setStatus('Loaded '+filename);
+        } else { setStatus('Unsupported file '+filename, true); }
+      }catch(e){ console.error(e); setStatus('Failed to load '+filename, true); }
+    }
+
+    // Filters hydration (populate Program/Batch dropdowns)
+    function hydrateFilters(){
+      const programs=[...new Set(state.all.map(s=>s.program))].sort();
+      const batches=[...new Set(state.all.map(s=>s.batch))].sort();
+      const pf=document.getElementById('programFilter'); const bf=document.getElementById('batchFilter');
+      if(pf){ pf.innerHTML='<option value="">All</option>'+programs.map(p=>`<option>${p}</option>`).join(''); }
+      if(bf){ bf.innerHTML='<option value="">All</option>'+batches.map(b=>`<option>${b}</option>`).join(''); }
+    }
+
+    // Snapshot PNG
+    async function saveSnapshotPng(){ try{ const node=document.querySelector('.scheduler'); if(!node){ setStatus('Nothing to capture', true); return; } setStatus('Rendering PNG…'); const canvas=await html2canvas(node,{backgroundColor:'#0e1116', scale:2}); const url=canvas.toDataURL('image/png'); const a=document.createElement('a'); a.href=url; const now=new Date(); a.download=`schedule_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.png`; document.body.appendChild(a); a.click(); a.remove(); setStatus('PNG downloaded'); }catch(e){ console.error(e); setStatus('Failed to save PNG', true); } }
+
+    function clearSelection(){ state.selected.clear(); renderSelected(); setStatus('Cleared'); }
+
+    // UI helpers
+    function updateScheduleTypeChipUI(){
+      const sel=document.getElementById('scheduleSelect'); const chip=document.getElementById('scheduleTypeChip'); if(!sel||!chip) return;
+      const opt=sel.selectedOptions && sel.selectedOptions[0]; if(!opt || !opt.value){ chip.classList.add('hidden'); chip.textContent=''; return; }
+      const ext = opt.getAttribute('data-ext') || fileExt(opt.value);
+      chip.textContent = ext; chip.classList.remove('hidden');
+    }
+
+    // Wire top bar controls
+    function wireTopbar(){
+      const loadBtn=document.getElementById('loadBtn'); const fileInput=document.getElementById('fileInput'); const clearBtn=document.getElementById('clearBtn');
+      const autoBtn=document.getElementById('autoBtn'); const scheduleSelect=document.getElementById('scheduleSelect');
+      const savePngBtn=document.getElementById('savePngBtn'); const savePlanBtn=document.getElementById('savePlanBtn'); const planSelect=document.getElementById('planSelect');
+      const folderInput=document.getElementById('folderInput'); const deletePlanBtn=document.getElementById('deletePlanBtn');
+
+      if(loadBtn && fileInput){ loadBtn.addEventListener('click', ()=> fileInput.click()); fileInput.addEventListener('change', ()=>{ const f=fileInput.files?.[0]; if(f) handleFile(f); fileInput.value=''; }); }
+      if(clearBtn) clearBtn.addEventListener('click', clearSelection);
+      if(autoBtn) autoBtn.addEventListener('click', async ()=>{ const count = await populateSchedulesDropdown(); if(!count && folderInput) folderInput.click(); });
+      if(folderInput) folderInput.addEventListener('change', ()=>{ populateSchedulesFromLocal(folderInput.files); });
+      if(scheduleSelect) scheduleSelect.addEventListener('change', ()=>{ const opt=scheduleSelect.selectedOptions[0]; const v=opt?.value||''; updateScheduleTypeChipUI(); if(!v) return; if(opt?.getAttribute('data-local')==='1'){ loadScheduleFromLocalKey(v); } else { loadScheduleFromFolder(v); } });
+      if(savePngBtn) savePngBtn.addEventListener('click', saveSnapshotPng);
+      if(savePlanBtn) savePlanBtn.addEventListener('click', saveCurrentPlan);
+      if(planSelect) planSelect.addEventListener('change', ()=>{ const v=planSelect.value; updateDeletePlanBtnState(); if(v) loadPlanById(v); });
+      if(deletePlanBtn) deletePlanBtn.addEventListener('click', deleteSelectedPlan);
+
+      refreshPlansDropdown();
+      updateDeletePlanBtnState();
+    }
+
+    // Init
+    function init(){ ensureSchedulerShell(); wireTopbar(); autoLoad(); }
+    window.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+</body>
+</html>
